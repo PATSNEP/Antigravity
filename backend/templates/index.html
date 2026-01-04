@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PPT Generator</title>
+    <!-- Tailwind via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+
+<body class="bg-gray-100 min-h-screen flex items-center justify-center">
+
+    <div class="bg-white p-8 rounded-xl shadow-lg w-full max-w-md">
+        <h1 class="text-2xl font-bold mb-6 text-center text-gray-800">PPT Generator</h1>
+
+        <div id="dropzone"
+            class="border-dashed border-4 border-gray-300 rounded-lg p-10 text-center cursor-pointer hover:bg-gray-50 transition relative">
+
+            <input type="file" id="fileInput" class="hidden" accept=".csv">
+
+            <div id="placeholder">
+                <p class="text-gray-500">Drag & Drop CSV here<br>or Click to Browse</p>
+            </div>
+            <div id="fileInfo" class="hidden">
+                <p id="filename" class="text-green-600 font-medium"></p>
+            </div>
+        </div>
+
+        <button id="uploadBtn" disabled
+            class="w-full mt-6 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition">
+            Generate Report
+        </button>
+
+        <div id="status" class="mt-4 text-center text-sm font-semibold text-gray-700 h-6"></div>
+
+        <a id="downloadLink" href="#" class="hidden block mt-4 text-center text-blue-600 underline">
+            Download Final Report
+        </a>
+    </div>
+
+    <script>
+        const dropzone = document.getElementById('dropzone');
+        const fileInput = document.getElementById('fileInput');
+        const fileInfo = document.getElementById('fileInfo');
+        const placeholder = document.getElementById('placeholder');
+        const filenameDisplay = document.getElementById('filename');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const status = document.getElementById('status');
+        const downloadLink = document.getElementById('downloadLink');
+
+        let selectedFile = null;
+
+        // Click to browse
+        dropzone.addEventListener('click', () => fileInput.click());
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) handleFile(e.target.files[0]);
+        });
+
+        // Drag & Drop
+        dropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropzone.classList.add('bg-gray-100');
+        });
+
+        dropzone.addEventListener('dragleave', () => {
+            dropzone.classList.remove('bg-gray-100');
+        });
+
+        dropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropzone.classList.remove('bg-gray-100');
+            if (e.dataTransfer.files.length) handleFile(e.dataTransfer.files[0]);
+        });
+
+        function handleFile(file) {
+            selectedFile = file;
+            filenameDisplay.textContent = file.name;
+            placeholder.classList.add('hidden');
+            fileInfo.classList.remove('hidden');
+            uploadBtn.disabled = false;
+            status.textContent = "";
+            downloadLink.classList.add('hidden');
+        }
+
+        uploadBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+
+            const formData = new FormData();
+            formData.append('file', selectedFile);
+
+            status.textContent = "Processing...";
+            uploadBtn.disabled = true;
+
+            try {
+                const response = await fetch('/upload', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (response.ok) {
+                    status.textContent = "Done!";
+                    downloadLink.href = data.download_url;
+                    downloadLink.classList.remove('hidden');
+                } else {
+                    status.textContent = "Error: " + (data.error || "Unknown error");
+                }
+            } catch (error) {
+                status.textContent = "Network Error";
+                console.error(error);
+            } finally {
+                uploadBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+
+</html>
