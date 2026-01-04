@@ -32,42 +32,17 @@ def process_text_frame(text_frame, replacements):
     # Or simpler: Check if any key is in the text.
     
     # Strategy: Find all unique keys present in the text
-    found_keys = []
-    for key in replacements:
-        if key in current_text:
-            found_keys.append(key)
-    
-    if not found_keys:
+    # 1. Generic Pre-check
+    if "{{" not in current_text:
         return
 
-    print(f"Found keys {found_keys} in text: '{current_text[:30]}...'")
-    
-    # If multiple keys found (like Slide 2), we might need careful reconstruction.
-    # Logic: If the replacement dict indicates "is_bullet", we assume paragraph reconstruction anyway.
-    
-    # Detailed replacement logic:
-    # We will reconstruct the text_frame.
-    # Warning: This destroys existing formatting of non-replaced text if mixed!
-    # Assumption (from reqs): "ausschließlich definierte Inhalte ersetzen" usually means the placeholder IS the content or we control the cell.
-    
-    # For robust partial replacement, we would need run-level splicing. 
-    # Given the project scope and "placeholder-principles", complete reconstruction is often safer/cleaner IF the placeholder is the main content.
-    # Exception: Slide 2 had mixed placeholders. We will rebuild linearly.
-    
-    # Sort keys by position in text to process in order? 
-    # Actually, simpler: The user wants specific data filled.
-    # If we have specific keys for this shape, we clear and fill.
-    
-    # Special Case: generic "Use Case Title" replacements vs specific keys.
-    # If the text is EXACTLY one key, simple replace.
-    
-    if len(found_keys) == 1 and found_keys[0] == current_text:
-        key = found_keys[0]
-        data = replacements[key]
-        text_frame.clear()
-        p = text_frame.paragraphs[0]
-        apply_replacement_to_paragraph(p, data)
-        return
+    # Skip specific key check to allow for whitespace normalization in step 2.
+    # found_keys check removed because it requires exact string match 
+    # which fails on {{Key  1}}.
+
+    # 2. Split and Normalize Process
+    # We proceed directly to regex split to handle whitespace robustly.
+
 
     # Mixed content or multiple keys (Slide 2)
     # Rebuilding tactic:
@@ -81,15 +56,39 @@ def process_text_frame(text_frame, replacements):
     pattern = r"(\{\{.*?\}\})"
     parts = re.split(pattern, current_text)
     
+    # Check if we found anything worth replacing
+    # Optimization: if no parts match keys (normalized), return early?
+    # Actually, we clear text_frame, so we must be sure we have replacements to make, 
+    # OR we are just reconstructing exact text if no replacement found.
+    # But clearing formatting is dangerous if we don't have to.
+    
+    # Let's check matches first
+    has_match = False
+    for part in parts:
+        # Normalize: {{  Key }} -> {{Key}}
+        # But our keys are strict: {{Marketing USE CASE Title 1}}
+        # We want to normalize INTERNAL spacing: "  " -> " "
+        norm_part = " ".join(part.split())
+        if norm_part in replacements:
+            has_match = True
+            break
+            
+    if not has_match:
+        return
+
     text_frame.clear()
     p = text_frame.paragraphs[0] # Start with first paragraph
     
     for part in parts:
         if not part: continue
         
+        # Normalize the part to check against our strict keys
+        norm_part = " ".join(part.split())
+        
+        
         # Check if part is a key to replace
-        if part in replacements:
-            data = replacements[part]
+        if norm_part in replacements:
+            data = replacements[norm_part]
             
             # If "is_bullet", we might need new paragraphs
             if data.get("is_bullet"):
@@ -121,18 +120,10 @@ def process_text_frame(text_frame, replacements):
         
         else:
             # Static text part (newlines, labels, etc.)
-            # Handle newlines if they exist in valid text
-            # If part is just whitespace/newlines, we might just add runs.
-            # But \n in run.text doesn't always make a new paragraph.
-            # If original had \n, split and add paragraphs?
-            
-            # Simple approach: Add as run text.
             if part.strip() or part == "\n":
                 run = p.add_run()
                 run.text = part
-                # Formatting? Inherit default (no easy way to grab original run font without complex mapping)
-                # Assumption: Template has defaults.
-                run.font.size = Pt(7) # Safe default from reqs
+                run.font.size = Pt(7)
 
 def apply_replacement_to_paragraph(paragraph, data):
     run = paragraph.add_run()
