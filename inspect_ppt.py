@@ -1,7 +1,7 @@
 from pptx import Presentation
 import os
 
-filename = "PPTWITHPLACEHOLDERS.pptx"
+filename = "backend/outputs/Final_Report.pptx"
 cwd = "/Users/patrickschnepf/Desktop/Master WINF/1 Semester/Projekt DT/Antigravity"
 path = os.path.join(cwd, filename)
 
@@ -13,8 +13,7 @@ try:
         indent_str = " " * indent
         if hasattr(shape, "text") and shape.text.strip():
             txt = shape.text
-            if "Marketing" in txt or "{{" in txt:
-                 print(f"{indent_str}MATCH: {repr(txt)}")
+            print(f"{indent_str}TEXT: {repr(txt)}")
         
         if shape.shape_type == 6:  # Group
             for child in shape.shapes:
@@ -28,10 +27,13 @@ try:
                         if "Marketing" in txt or "{{" in txt:
                             print(f"{indent_str}TABLE MATCH: {repr(txt)}")
 
-    for i, slide in enumerate(pr.slides):
-        print(f"Slide {i+1}:")
-        for shape in slide.shapes:
-            print_shape_text(shape, 2)
+    print(f"Total Slides: {len(pr.slides)}")
+    slide_index = 0
+    slide = pr.slides[slide_index]
+    
+    print(f"Inspecting Slide 1 (Index {slide_index})...")
+    for shape in slide.shapes:
+        print_shape_text(shape, 2)
 
 except Exception as e:
     print(f"Error: {e}")

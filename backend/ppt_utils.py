@@ -23,51 +23,26 @@ def replace_text_in_shape(shape, replacements):
         process_text_frame(shape.text_frame, replacements)
 
 def process_text_frame(text_frame, replacements):
-    current_text = text_frame.text.strip()
-    if not current_text:
-        return
-
-    # 1. Exact/Complex Match Check (e.g. Slide 2 specific grouped placeholders)
-    # We iterate through keys to see if ALL keys of a "group" are present? 
-    # Or simpler: Check if any key is in the text.
+    # Iterate over paragraphs. 
+    # Use index-based loop or copy if we were modifying structure, 
+    # but rebuilding IN-PLACE is usually fine if we don't change paragraph count.
+    # However, p.clear() clears runs but keeps the paragraph element.
     
-    # Strategy: Find all unique keys present in the text
-    # 1. Generic Pre-check
-    if "{{" not in current_text:
-        return
+    for p in text_frame.paragraphs:
+        # Optimization: only touch paragraphs with placeholders
+        if "{{" in p.text:
+            process_paragraph(p, replacements)
 
-    # Skip specific key check to allow for whitespace normalization in step 2.
-    # found_keys check removed because it requires exact string match 
-    # which fails on {{Key  1}}.
-
-    # 2. Split and Normalize Process
-    # We proceed directly to regex split to handle whitespace robustly.
-
-
-    # Mixed content or multiple keys (Slide 2)
-    # Rebuilding tactic:
-    # If we find specific known combinations (like the Slide 2 set), we use a hardcoded structure or a "smart rebuild"?
-    # Smart rebuild: Regex split?
-    # `{{Key}}` -> Replace. `\n` -> New Paragraph.
-    
-    # Let's try a regex split approach to preserve structure:
-    # Pattern: ({{.*?}}) capture group
-    
+def process_paragraph(p, replacements):
+    current_text = p.text
+    # Regex split to handle mixed content (like title + subtitle)
     pattern = r"(\{\{.*?\}\})"
     parts = re.split(pattern, current_text)
     
-    # Check if we found anything worth replacing
-    # Optimization: if no parts match keys (normalized), return early?
-    # Actually, we clear text_frame, so we must be sure we have replacements to make, 
-    # OR we are just reconstructing exact text if no replacement found.
-    # But clearing formatting is dangerous if we don't have to.
-    
-    # Let's check matches first
+    # Check match again with normalized keys to be sure we have a replacement
+    # (Reuse logic from before)
     has_match = False
     for part in parts:
-        # Normalize: {{  Key }} -> {{Key}}
-        # But our keys are strict: {{Marketing USE CASE Title 1}}
-        # We want to normalize INTERNAL spacing: "  " -> " "
         norm_part = " ".join(part.split())
         if norm_part in replacements:
             has_match = True
@@ -76,54 +51,35 @@ def process_text_frame(text_frame, replacements):
     if not has_match:
         return
 
-    text_frame.clear()
-    p = text_frame.paragraphs[0] # Start with first paragraph
+    # Clear and Rebuild Paragraph
+    p.clear() 
+    # Note: p.clear() removes all runs. Paragraph properties (alignment etc) usually remain.
     
     for part in parts:
         if not part: continue
         
-        # Normalize the part to check against our strict keys
         norm_part = " ".join(part.split())
         
-        
-        # Check if part is a key to replace
         if norm_part in replacements:
             data = replacements[norm_part]
-            
-            # If "is_bullet", we might need new paragraphs
-            if data.get("is_bullet"):
-                # Bullets usually start on a new paragraph.
-                # If we are currently at start of p (empty), use p.
-                # Else add new p.
-                
-                content_parts = data["text"].split(";")
-                for i, content in enumerate(content_parts):
-                    if not content.strip(): continue
-                    
-                    if i == 0 and len(p.runs) == 0:
-                        target_p = p
-                    else:
-                        target_p = text_frame.add_paragraph()
-                    
-                    target_p.level = 0 # Assume level 0
-                    run = target_p.add_run()
-                    run.text = "• " + content.strip()
-                    apply_formatting(run, data.get("formatting", {}))
-                    
-                    # Update current p pointer to the last one added
-                    p = target_p
-            else:
-                # Normal text replacement
-                run = p.add_run()
-                run.text = data["text"]
-                apply_formatting(run, data.get("formatting", {}))
-        
+            # Handle replacement
+            run = p.add_run()
+            run.text = data["text"]
+            apply_formatting(run, data.get("formatting", {}))
         else:
-            # Static text part (newlines, labels, etc.)
-            if part.strip() or part == "\n":
+            # Static text part
+            # We add it back. 
+            if part: # Add even if just whitespace/newlines
                 run = p.add_run()
-                run.text = part
+                # Fix for vertical tab (\x0b) rendering as _x000B_
+                # Replace with \n for correct line break in PPT
+                run.text = part.replace("\x0b", "\n")
+                
+                # Restore fixed font size for data rows to prevent layout distortion
+                # (e.g. alignment tabs becoming too large)
+                # Since headers are skipped (no {{), this is safe for data paragraphs.
                 run.font.size = Pt(7)
+
 
 def apply_replacement_to_paragraph(paragraph, data):
     run = paragraph.add_run()
