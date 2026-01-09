@@ -27,9 +27,9 @@ def upload_file():
     file.save(filepath)
     
     try:
-        # TODO: Connect real processor
-        # output_name = process_ppt(filepath, OUTPUT_FOLDER)
-        output_name = "Final_Report.pptx" # Mock return
+        # "Scharf geschaltet": Connect real processor
+        output_name = process_ppt(filepath, OUTPUT_FOLDER)
+        # output_name = "Final_Report.pptx" # Mock return
         
         return jsonify({"message": "Success", "download_url": f"/download/{output_name}"})
     except Exception as e:
