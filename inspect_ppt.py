@@ -28,12 +28,11 @@ try:
                             print(f"{indent_str}TABLE MATCH: {repr(txt)}")
 
     print(f"Total Slides: {len(pr.slides)}")
-    slide_index = 0
-    slide = pr.slides[slide_index]
     
-    print(f"Inspecting Slide 1 (Index {slide_index})...")
-    for shape in slide.shapes:
-        print_shape_text(shape, 2)
+    for i, slide in enumerate(pr.slides):
+        print(f"Inspecting Slide {i}...")
+        for shape in slide.shapes:
+            print_shape_text(shape, 2)
 
 except Exception as e:
     print(f"Error: {e}")
