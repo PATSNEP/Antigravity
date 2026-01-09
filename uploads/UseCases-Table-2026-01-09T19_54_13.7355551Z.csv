@@ -1,0 +1,124 @@
+@odata.etag,cr4e2_businessunit@OData.Community.Display.V1.FormattedValue,cr4e2_businessunit,cr4e2_businessadoptiondate,cr4e2_lateststatusupdate,cr4e2_overallcompleteness,cr4e2_usecasetitle,cr4e2_owner,cr4e2_businesscontacts,cr4e2_affectedkeyusers,cr4e2_pr@OData.Community.Display.V1.FormattedValue,cr4e2_pr,cr4e2_deliverydate,cr4e2_lineofbusiness,cr4e2_heatmamapping@OData.Community.Display.V1.FormattedValue,cr4e2_heatmamapping,cr4e2_owneremail,cr4e2_value,cr4e2_overallstatus,cr4e2_scope,cr4e2_marketingid,cr4e2_problemstatement,cr4e2_usecasetype@OData.Community.Display.V1.FormattedValue,cr4e2_usecasetype
+"W/""3181658""",Marketing,743090000,01.26,"Features closed (CDP | Drop-down menu with values), done 
+Data into the new behavioral Data Schema
+
+",95%,ITDYM-4319 – CDP MVP | RISE Program,Nitin Singh,Dennis Flick,Buying Committee,Green,743090001,06.25,Marketing,7. Technical Go-Live,743090006,uas0041282@stud.fra-uas.de,"Value Measurement:
+Generate net new contacts (opt-in)
+Among others, increase Ad, Web and Buying Committee Engagement, and engagement score 
+
+KPI to be measured: 
+Reach X% (penetration rate) into Accounts 
+Engagement: Increase number, frequency and quality of interactions / X% increase in engagement and asset consumption rates
+Generate X% new marketable contacts within targeted accounts
+","Testing in CRM completed, one more change done in CRM, E2E testing in progress by Krishna – to be verified by Suzanne this week
+Next step: move to production
+","Market(s): Austria & Nordics. Persona (“sub-IDP”): CIO
+Segment: ECC customers engaged with marketing, no pipeline, with medium to large Maintenance Revenue Band (>100k - <500k [medium] & >500k [large])
+TAL as of Q4 2024: # Austria = 153 Accounts / # Nordics = 149 Accounts (Denmark, Norway, Iceland, Sweden, Finland combined)
+",1753eaf9-d4e8-f011-8406-000d3ab7bcc2,"Help accelerate customers to our cloud by demonstrating value at key accounts, particularly for key decision makers and influencers (finance & operations)
+Map marketing engagement to pipeline forecast (aligned across marketing & sales) to drive new opportunities (revenue) by building reputation and relationships through relevant reach & engagement touchpoints for all target and hidden buyer personas of the RISE Buying Committees from our target accounts.
+Target RISE accounts in LinkedIn
+",CDP Business Adoption,743090000
+"W/""3181660""",Compliance,743090002,02.26,this is the latest status update for test purposes,95%,SP-27120 - China CBDT- Long Term Compliance,Tristan Raver,Marketing: Zuzana Mihalikova & Silvie Mezirkova,Field Marketing China Field Sales China Data privacy operations,Green,743090001,02.26,"Marketing, Sales, DPP",5. Feature Development,743090004,uas0041282@stud.fra-uas.de,"Data Privacy and Protection,  Compliance with local regulations
+Centralized and automated tracking and notifications of revoke and resulting need to delete personal data
+","Testing of match and merge completed, SAM matching/ testing completed. Documentation of findings in progress. 
+","When a contact revokes CBDT, SAP should delete the contact record from all global systems (SMC, MDG, CRM, ISP, PRM...) and as CDP will receive the revoke from the consent repository and identify the various source systems in which the contact is present.  
+We would like to trigger a notification (email workflow) to DPP Operations (recipient (privacy@SAP.com) (tbc) & email content to be confirmed) when a revoke is received which includes information regarding the source systems and identifiers for the contact to be deleted.
+",79b06fec-51e9-f011-8406-000d3ab7bcc2,"China has instituted a data privacy law which requires that a citizen of China must be able to grant or revoke cross-boarder data transfer (CBDT) of their personal information
+In order to comply with CBDT consent SAP must react to a revoke by deleting the individuals personal data from all global systems
+Local consent repository established to capture CBDT consent but missing transparency and recognition of real-time revocation 
+",CDP Business Adoption,743090000
+"W/""3177620""",Sales,743090001,02.26,"Started in Sprint 4 (Oct 20), collect requirements, then check feasibility",75,SP-28344 - 360 SMC Contact Fact Sheet Replacement PoC,"Carol Marchesy, Nitin Singil",Suzanne McFady,Sales,,,01.26,Sales,5. Feature Development,743090004,uas0041282@stud.fra-uas.de,"Value Measurement:​
+
+    Single Source of Truth: Ensures CDP becomes the central hub for contact data, improving accuracy and consistency across systems.​
+
+    Scalable Foundation: Establishes the groundwork for future phases, enabling CDP as leading system for Contacts and replicating the contact data to Outreach​
+
+KPI to be measured: ",,"    Transition CDP (Customer Data Platform) to become the leading system for contact management, replacing CRM in a phased manner.​
+
+Phase 1 : Sync CDP and Outreach ( Create and Update) Prospects for​
+
+    Solution Contacts​
+
+    Key Contacts​
+
+    ​
+
+Phase 2 : Expand CDP and Outreach integration for  rest of the contact attributes.",69c66e4b-13ea-f011-8406-000d3ab7bcc2,"Currently, CRM is the primary source for managing contacts, but it lacks a centralized approach to consolidate contact data across multiple sources. This leads to inconsistent, incomplete, or outdated contact information across systems.",CDP Business Adoption,743090000
+"W/""3177623""",Sales,743090001,03.26,"CDP feasibility check completed, Foued reviewed results
+Further development outside CDP not needed",,SP-27065 - [PoC] Move classification Logic to CDP,Semal Korzan,-,-,Green,743090001,02.26,"Sales, Marketing",1. Jira Set-up & One Pager,743090000,uas0041282@stud.fra-uas.de,"    Following target architecture to have CDP as central place for derived fields.​
+
+    Realtime update of classification during ingestion in CDP​
+
+    From CDP data can be distributed to other sources as needed.​
+
+    Further improvement of classification logic is easier as CDP unifies multiple sources and offers deeper insights into a contact profile.","contingent on development of CCRMS (Country Compliance Rules Management System)
+Call with Data Protection team necessary to refine requirements and timeline – took place
+Data Protection team implementing CCRMS system in progress, Integration of CDC started in parallel by EDT
+Carol: contact schema for storing consent data from CDC (alignments in progress, Carol to check what they need from us)
+Implementation of CDC – CDP integration completed. Next step: E2E testing in sprint 4, invite will follow
+Carol to provide fields
+","Check feasibility of rebuilding the classifications as a derived field in CDP​
+
+    Only classifications that can be derived from contact attributes or roles should be included as derived fields.​
+
+    Transactional and Contractual classifications are excluded.",4b3f1c03-18ea-f011-8406-000d3ab7bcc2,"A contact’s role can be identified based on their xLoB process interactions and the personas they fulfill within those processes. The assignment of roles identifies both current and future expectations for engagement and therefore provides supplementary information regarding their usage and importance to the management of the customer relationship.​
+
+Currently, classifications are calculated in CRM. CDP is the platform where information from multiple sources is unified. Moving the calculation logic from CRM to CDP is a step towards our target architecture, with CDP serving as the central platform for derived fields",CDP Foundational Use Case,743090001
+"W/""3181655""",Customer Success,743090003,01.26,This status upadet is for testing reasons,95%,DP Harmonized Data Product for Gainsight platform consumption,Pat Sep,Pat Sap,Sales,,,11.25,CS,5. Feature Development,743090004,uas0041282@stud.fra-uas.de,harmonizing stuff,"overalll status
+",to harmomnize gainsight,134c3dd6-8ded-f011-8406-000d3ab7bcc2,harmonized use case,CDP Foundational Use Case,743090001
+"W/""3181653""",Compliance,743090002,01.26,This status upadet is for testing reasons,95%,Contact Interest Intelligence (CII) Integration in CDP - PoC,UC Owner,Mara Musterfrau,Sales,Green,743090001,11.25,CS,5. Feature Development,743090004,uas0041282@stud.fra-uas.de,"Legitimate interest will be calculated in CII at the solution and sub-solution area level
+Calculated legitimate Interest will be stored in CDP as contact attributes at the solution and sub-solution area level
+Calculating and storing legitimate interest at the solution area and sub-solution area level supports integrated demand programs (solution area) and sales processes (sub-solution area). 
+
+","In analysis (checking req. and acceptance criteria), started
+Check feasibility on CDP side (Foued) ongoing. Started in sprint 4 (Oct 20)
+
+","Integrating the CII service in the Central Person Profile will provide for central/direct consumption by Marketing for execution/segmentation as well as in target systems such as Outreach for Sales 
+Benefits of CII:
+Improved Data 
+",9aaa63ef-8ded-f011-8406-000d3ab7bcc2,"SAP’s current Person landscape (customer, supplier, partner, prospects) is highly segmented
+No single source of truth for Person
+",CDP Foundational Use Case,743090001
+"W/""3181662""",Marketing,743090000,01.26,This status upadet is for testing reasons,95%,DP Harmonized Data Product for Gainsight platform consumption,Max Mustermann,Mara Musterfrau,Sales,,,11.25,CS,5. Feature Development,743090004,uas0041282@stud.fra-uas.de,tst,"overalll status
+",test,79135af5-8ded-f011-8406-000d3ab7bcc2,test,CDP Business Adoption,743090000
+"W/""3181664""",Marketing,743090000,01.01.2025,30.11.2025,,ITDYM-4319 – CDP MVP | RISE Program,Nitin Singh,Dennis Frick,Buying Committee,Green,743090001,30.12.2025,Austria + Nordics,1. Jira Set-up & One Pager,743090000,fatima-zahra.elazraq@stud.fra-uas.de,"Value Measurement:​
+Generate net new contacts (opt-in)​
+Among others, increase Ad, Web and Buying Committee Engagement, and engagement score ​
+​
+KPI to be measured: ​
+Reach X% (penetration rate) into Accounts ​
+Engagement: Increase number, frequency and quality of interactions / X% increase in engagement and asset consumption rates​
+Generate X% new marketable contacts within targeted accounts​
+​","Started in Sprint 4 (Oct 20), collect requirements, then check feasibility
+","​
+Market(s): Austria & Nordics. Persona (“sub-IDP”): CIO​
+Segment: ECC customers engaged with marketing, no pipeline, with medium to large Maintenance Revenue Band (>100k - <500k [medium] & >500k [large])​
+TAL as of Q4 2024: # Austria = 153 Accounts / # Nordics = 149 Accounts (Denmark, Norway, Iceland, Sweden, Finland combined)",67d1f085-1fd4-f011-8543-7ced8d3fcfd2,"Help accelerate customers to our cloud by demonstrating value at key accounts, particularly for key decision makers and influencers (finance & operations)​
+Map marketing engagement to pipeline forecast (aligned across marketing & sales) to drive new opportunities (revenue) by building reputation and relationships through relevant reach & engagement touchpoints for all target and hidden buyer personas of the RISE Buying Committees from our target accounts.​
+Target RISE accounts in LinkedIn",CDP Business Adoption,743090000
+"W/""3177621""",Sales,743090001,01.26,"Implemented fix for mandatory job title and C4C guide mapping
+NGCS E2E testing 
+
+
+",90,SP-24636  – C4C Integration in CDP Inbound,Krishna Angurala,"Jeff Ingrast, Tristian Raver",Buying Committee,,,10.25,Marketing,6. Testing & Business Sign-off,743090005,uas0041282@stud.fra-uas.de,"Implementing robust contact synchronization between SAP Sales Cloud (C4C), Outreach, and the CDP will:
+Reduce data inconsistencies and ensure up-to-date information across systems.
+Automate contact updates and reduce manual data management efforts.
+Minimize redundant records, enhancing data quality and usability.
+Enable scalability and data integrity as the organization expands its customer engagement and sales processes.
+",,"The scope includes:
+Data Synchronization:
+Establish a process to update contacts between C4C and Outreach via CDP.
+
+Duplicate Prevention:
+Introduce checks in CDP to identify existing contacts before creating new records.
+Update existing contacts instead of generating duplicates.
+
+Bidirectional Update Implementation:
+Develop API-based mechanisms to enable updates from CDP to C4C.
+
+Update Scope:
+Synchronize key fields such as name, email, phone number, and job title.
+",ecaaa5d9-d5e8-f011-8406-7ced8d731874,"NGCS project aims to develop a reliable and efficient synchronization mechanism between SAP Sales Cloud (C4C), Outreach, and the CDP to ensure consistent and accurate contact data across platforms.
+
+",CDP Business Adoption,743090000

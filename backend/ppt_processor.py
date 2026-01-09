@@ -72,7 +72,7 @@ def process_ppt(csv_path, output_folder):
         },
         {
             "name": "Compliance",
-            "filter": "Complaince", # Matching CSV typo as requested
+            "filter": "Compliance",  # Fixed typo from older CSV
             "p_title": "Compliance USE CASE Title {}",
             "p_del": "COD{}",
             "p_adopt": "COA{}"

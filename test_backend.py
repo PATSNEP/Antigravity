@@ -1,14 +1,14 @@
 from backend.ppt_processor import process_ppt
 import os
 
-# Test Setup
-CSV_PATH = "UseCases-Table-2026-01-04T09_57_57.3469416Z.csv"
-OUTPUT_DIR = "backend/outputs"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# Updated filename
+csv_file = "UseCases-Table-2026-01-09T19_54_13.7355551Z.csv"
+output_dir = "backend/outputs"
+os.makedirs(output_dir, exist_ok=True)
 
 try:
     print("Running processor (Simulation)...")
-    out_file = process_ppt(CSV_PATH, OUTPUT_DIR)
+    out_file = process_ppt(csv_file, output_dir)
     print(f"Success! Output: {out_file}")
     
     # Validation
