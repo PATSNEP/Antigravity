@@ -76,6 +76,13 @@ def process_ppt(csv_path, output_folder):
             "p_title": "Compliance USE CASE Title {}",
             "p_del": "COD{}",
             "p_adopt": "COA{}"
+        },
+        {
+            "name": "Customer Success",
+            "filter": "Customer Success",
+            "p_title": "Customer Success USE CASE Title {}",
+            "p_del": "CUD{}",
+            "p_adopt": "CUA{}"
         }
     ]
     
@@ -84,27 +91,39 @@ def process_ppt(csv_path, output_folder):
         all_cases.extend(cases)
         
     for config in LOB_CONFIGS:
-        lob_cases = [
-            c for c in all_cases 
-            if config["filter"] in getattr(c, "business_unit", "")
+        # 1. Broad filter by Business Unit (Marketing, Sales, Compliance, Customer Success)
+        lob_cases = [c for c in all_cases if config["filter"] in getattr(c, "business_unit", "")]
+        
+        # 2. Strict filter for Slide 1 Display (User Request: Only "CDP Business Adoption")
+        # Ignore "CDP Foundational Use Case"
+        slide1_display_cases = [
+            c for c in lob_cases 
+            if getattr(c, "use_case_type", "").strip() == "CDP Business Adoption"
         ]
         
-        print(f"Found {len(lob_cases)} cases for {config['name']} (Filter: {config['filter']})")
+        print(f"LoB: {config['name']} | Found: {len(lob_cases)} | Display (Business Adoption): {len(slide1_display_cases)}")
         
-        for i, uc in enumerate(lob_cases):
-            num = i + 1
+        # Sort by adoption date or other criteria? Default is CSV order.
+        
+        for i, case in enumerate(slide1_display_cases):
+            # i+1 because placeholders start at 1
+            idx = i + 1
             
+            # Map attributes to placeholders
             # Title
-            key_title = "{{" + config["p_title"].format(num) + "}}"
-            replacements[key_title] = {"text": uc.title, "formatting": FMT_TITLE}
-            
+            key_title = "{{" + config["p_title"].format(idx) + "}}"
+            replacements[key_title] = {
+                "text": case.title,
+                "formatting": FMT_TITLE
+            }
             # Delivery Date
-            key_del = "{{" + config["p_del"].format(num) + "}}"
-            replacements[key_del] = {"text": uc.delivery_date, "formatting": FMT_DATE}
+            key_del = "{{" + config["p_del"].format(idx) + "}}"
+            replacements[key_del] = {"text": case.delivery_date, "formatting": FMT_DATE}
             
             # Adoption Date
-            key_adopt = "{{" + config["p_adopt"].format(num) + "}}"
-            replacements[key_adopt] = {"text": uc.adoption_date, "formatting": FMT_DATE}
+            # Adoption Date
+            key_adopt = "{{" + config["p_adopt"].format(idx) + "}}"
+            replacements[key_adopt] = {"text": case.adoption_date, "formatting": FMT_DATE}
     
     # 2. Open Template
     if not os.path.exists(TEMPLATE_PATH):
@@ -120,9 +139,112 @@ def process_ppt(csv_path, output_folder):
     for shape in slide1.shapes:
         replace_text_in_shape(shape, replacements)
         
-    # 4. Slide 2 Logic (placeholder, if needed later)
-    # ...
+    # 4. Slide 2-6 Logic (Heatmaps / Status Slides)
+    # Generic Logic for Marketing, Sales, Compliance
+    
+    HEATMAP_CONFIGS = [
+        {
+            "name": "Marketing",
+            "filter": "Marketing",
+            "slides": [1, 2], # Slide 2 & 3
+            "regex_title": r"\{\{Marketing\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
+            "fmt_title": "{{{{Marketing USE CASE Title {idx}}}}}",
+            "fmt_status": "{{{{StatusupdateUC{idx}Marketing}}}}",
+            "key_owner": "{{UseCaseOwnerMarketing}}",
+            "fmt_date_d": "{{{{MD{idx}}}}}",
+            "fmt_date_a": "{{{{MA{idx}}}}}"
+        },
+        {
+            "name": "Sales",
+            "filter": "Sales",
+            "slides": [3, 4], # Slide 4 & 5
+            "regex_title": r"\{\{SALES\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
+            "fmt_title": "{{{{SALES USE CASE Title {idx}}}}}",
+            "fmt_status": "{{{{StatusupdateUC{idx}Sales}}}}",
+            "key_owner": "{{UseCaseOwnerSales}}",
+            "fmt_date_d": "{{{{SD{idx}}}}}",
+            "fmt_date_a": "{{{{SA{idx}}}}}"
+        },
+        {
+            "name": "Compliance",
+            "filter": "Compliance",
+            "slides": [5], # Slide 6
+            "regex_title": r"\{\{Compliance\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
+            "fmt_title": "{{{{Compliance USE CASE Title {idx}}}}}",
+            "fmt_status": "{{{{StatusupdateUC{idx}Compliance}}}}",
+            "key_owner": "{{UseCaseOwnerCompliance}}",
+            "fmt_date_d": "{{{{COD{idx}}}}}",
+            "fmt_date_a": "{{{{COA{idx}}}}}"
+        }
+    ]
 
+    for config in HEATMAP_CONFIGS:
+        # Filter Cases (LoB + CDP Business Adoption)
+        cases = [
+            c for c in all_cases 
+            if config["filter"] in getattr(c, "business_unit", "") 
+            and getattr(c, "use_case_type", "").strip() == "CDP Business Adoption"
+        ]
+        
+        print(f"Processing Heatmaps for {config['name']} ({len(cases)} cases found)...")
+        
+        for slide_idx in config["slides"]:
+            if slide_idx >= len(prs.slides): continue
+            
+            slide = prs.slides[slide_idx]
+            
+            # Iterate generic
+            for shape in slide.shapes:
+                if shape.has_table:
+                    for row in shape.table.rows:
+                        for cell in row.cells:
+                            process_heatmap_cell(cell.text_frame, cases, config)
+                
+                if shape.has_text_frame:
+                    process_heatmap_cell(shape.text_frame, cases, config)
+    
+    # 5. Slide 7 & 8 Logic (Foundational Use Cases)
+    # Filter: Type="CDP Foundational Use Case" (Any BU)
+    foundational_cases = [
+        c for c in all_cases 
+        if getattr(c, "use_case_type", "").strip() == "CDP Foundational Use Case"
+    ]
+    print(f"Processing Foundational Cases ({len(foundational_cases)} cases found)...")
+    
+    # Slides 7 (Index 6) and 8 (Index 7)
+    foundational_slides = [6, 7]
+    
+    # Since placeholders are indexed {{... 1}}, {{... 2}}, we can use a global replacement map 
+    # tailored to the available cases.
+    f_replacements = {}
+    for i, case in enumerate(foundational_cases):
+        idx = i + 1 # 1-based index
+        
+        # Title
+        f_replacements[f"{{{{Foundational Use Case Title {idx}}}}}"] = {
+            "text": case.title,
+            "formatting": FMT_TITLE
+        }
+        
+        # Owner
+        f_replacements[f"{{{{Foundational Use Case Owner {idx}}}}}"] = {
+            "text": case.owner,
+            "formatting": {"font_size": 7, "color": RGBColor(0,0,0)}
+        }
+        
+        # Overall Status
+        f_replacements[f"{{{{Overall Status FUC {idx}}}}}"] = {
+            "text": getattr(case, "overall_status", "N/A"),
+            "formatting": {"font_size": 7, "color": RGBColor(0,0,0)}
+        }
+        
+    for slide_idx in foundational_slides:
+        if slide_idx >= len(prs.slides): continue
+        slide = prs.slides[slide_idx]
+        
+        for shape in slide.shapes:
+            replace_text_in_shape(shape, f_replacements)
+    
     FMT_OP_TEXT = {"font_size": 10, "color": RGBColor(0,0,0)}
     
     # Re-gather all cases in LOB order
@@ -167,3 +289,57 @@ def process_ppt(csv_path, output_folder):
     prs.save(output_path)
     
     return output_filename
+
+def process_heatmap_cell(text_frame, cases, config):
+    """
+    Scans a text frame for specific LOB Title placeholders (via regex).
+    If found, resolves Index, gets the case, and converts placeholders contextually.
+    """
+    import re
+    try:
+        from backend.ppt_utils import process_text_frame
+    except ImportError:
+        from ppt_utils import process_text_frame
+    
+    text = text_frame.text
+    match = re.search(config["regex_title"], text, re.IGNORECASE)
+    
+    if match:
+        idx = int(match.group(1))
+        # Case indices are 1-based in PPT, 0-based in list
+        case_idx = idx - 1
+        
+        if 0 <= case_idx < len(cases):
+            case = cases[case_idx]
+            
+            replacements = {}
+            
+            # 1. Title
+            key_title = config["fmt_title"].format(idx=idx)
+            replacements[key_title] = {
+                "text": case.title,
+                "formatting": FMT_TITLE
+            }
+            
+            # 2. Status Update
+            key_status = config["fmt_status"].format(idx=idx)
+            replacements[key_status] = {
+                "text": getattr(case, "status_update", "N/A"),
+                "formatting": {"font_size": 7, "color": RGBColor(0,0,0)}
+            }
+            
+            # 3. Owner (Generic Key)
+            replacements[config["key_owner"]] = {
+                "text": case.owner,
+                "formatting": {"font_size": 7, "color": RGBColor(0,0,0)} 
+            }
+            
+            # 4. Dates
+            key_date_d = config["fmt_date_d"].format(idx=idx)
+            key_date_a = config["fmt_date_a"].format(idx=idx)
+            
+            replacements[key_date_d] = {"text": case.delivery_date, "formatting": FMT_DATE}
+            replacements[key_date_a] = {"text": case.adoption_date, "formatting": FMT_DATE}
+            
+            # Apply replacements to this text frame
+            process_text_frame(text_frame, replacements)
