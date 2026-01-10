@@ -4,10 +4,10 @@ from pptx.util import Pt
 from pptx.dml.color import RGBColor
 try:
     from backend.data_loader import load_data
-    from backend.ppt_utils import replace_text_in_shape
+    from backend.ppt_utils import replace_text_in_shape, duplicate_slide, delete_slide
 except ImportError:
     from data_loader import load_data
-    from ppt_utils import replace_text_in_shape
+    from ppt_utils import replace_text_in_shape, duplicate_slide, delete_slide
 
 # Constants matching user request
 TEMPLATE_FILE = "../PPTWITHPLACEHOLDERS.pptx" 
@@ -214,9 +214,36 @@ def process_ppt(csv_path, output_folder):
     # Slides 7 (Index 6) and 8 (Index 7)
     foundational_slides = [6, 7]
     
+    # Calculate Statistics for Overview Message
+    total_foundational = len(foundational_cases)
+    positive_count = 0
+    for c in foundational_cases:
+        status_val = getattr(c, "traffic_light", "").strip().lower()
+        # Green OR Grey (or Empty/Blank which implies Neutral/Grey) counts as "on track"
+        if "green" in status_val or "grey" in status_val or "gray" in status_val or status_val == "":
+            positive_count += 1
+            
+    overview_msg = ""
+    if total_foundational > 0:
+        percent_positive = (positive_count / total_foundational) * 100
+        if percent_positive >= 80:
+            overview_msg = "All CDP Foundational Use Cases are on track and will enable business adoption."
+        else:
+            # Round to int or 1 decimal? User said "X%".
+            overview_msg = f"Only {int(percent_positive)}% CDP Foundational Use Cases are on track and will enable business adoption."
+    else:
+        overview_msg = "No Foundational Use Cases found."
+
     # Since placeholders are indexed {{... 1}}, {{... 2}}, we can use a global replacement map 
     # tailored to the available cases.
     f_replacements = {}
+    
+    # Add Overview Messages (1 & 2)
+    # The user mentioned {{AIOverviewMessage1}} and {{AIOverviewMessage2}}
+    # Formatting: Font size 11, Not Bold (bold: False)
+    f_replacements["{{AIOverviewMessage1}}"] = {"text": overview_msg, "formatting": {"bold": False, "font_size": 11, "color": RGBColor(0,0,0)}}
+    f_replacements["{{AIOverviewMessage2}}"] = {"text": overview_msg, "formatting": {"bold": False, "font_size": 11, "color": RGBColor(0,0,0)}}
+    
     for i, case in enumerate(foundational_cases):
         idx = i + 1 # 1-based index
         
@@ -274,34 +301,74 @@ def process_ppt(csv_path, output_folder):
                 lob_cases.append(c)
         ordered_cases.extend(lob_cases)
 
-    # 5. One-Pager Generation (TEST: Fill Last Slide Only)
-    # User Request: "nur die placeholder der letzten slide ausgefüllt werden"
-    # We pick the FIRST use case from our list to fill into the existing template slide.
     
-    if ordered_cases:
-        target_uc = ordered_cases[0] # Pick the first one
-        print(f"Test Filling Last Slide with: {target_uc.title}")
+    
+    # 5. One-Pager Generation (Fill Pre-Duplicated Slides)
+    # The user has manually duplicated Slide 9 multiple times in the template.
+    # We just need to iterate through cases and fill the corresponding slides.
+    # Start Index for One-Pagers: 8 (Slide 9 is index 8)
+    
+    start_op_index = 8
+    print(f"Generating One-Pagers for {len(ordered_cases)} cases (Starting at Slide {start_op_index+1})...")
+    
+    cases_processed = 0
+    
+    for i, target_uc in enumerate(ordered_cases):
+        slide_idx = start_op_index + i
         
-        last_slide_index = len(prs.slides) - 1
-        last_slide = prs.slides[last_slide_index]
+        # Check if we have enough slides in template
+        if slide_idx >= len(prs.slides):
+            print(f"WARNING: Not enough One-Pager slides in template! Stopped at Case {i+1}.")
+            break
+            
+        slide = prs.slides[slide_idx]
         
         # Prepare Replacements
+        # Note: The placeholders are static in the template (e.g. {{UseCaseOnePagerTitel1}}).
+        # We replace them in `slide`.
+        
         op_replacements = {
             "{{UseCaseOnePagerTitel1}}": {"text": target_uc.title, "formatting": {"bold": True, "color": RGBColor(0, 176, 240)}},
             "{{UseCaseOnePagerPB1}}": {"text": target_uc.problem_statement, "formatting": FMT_OP_TEXT},
             "{{UseCaseOnePagerScope1}}": {"text": target_uc.scope, "formatting": FMT_OP_TEXT},
             "{{UseCaseOnePagerV&KPI1}}": {"text": target_uc.value_kpis, "formatting": FMT_OP_TEXT},
             "{{UseCaseOnePagerBU1}}": {"text": target_uc.line_of_business, "formatting": FMT_OP_TEXT}, 
+            "{{UseCaseOnePagerBSU1}}": {"text": target_uc.business_unit, "formatting": FMT_OP_TEXT}, 
             "{{UseCaseOnePagerOwner1}}": {"text": target_uc.owner, "formatting": FMT_OP_TEXT},
             "{{UseCaseOnePagerScopeBC}}": {"text": target_uc.business_contacts, "formatting": FMT_OP_TEXT},
             "{{UseCaseOnePagerScopeAFK}}": {"text": target_uc.affected_key_users, "formatting": FMT_OP_TEXT},
-            "{{UseCaseOnePagerBSU1}}": {"text": target_uc.business_unit, "formatting": FMT_OP_TEXT}, 
         }
         
-        for shape in last_slide.shapes:
+        # Fill Slide
+        for shape in slide.shapes:
             replace_text_in_shape(shape, op_replacements)
+            
+        cases_processed += 1
+
+    # 6. Delete Unused Slides
+    # If we have 10 OP slides but only 5 cases, we should remove the remaining 5 empty slides.
+    # Start deleting from (start_op_index + cases_processed) to end.
+    # Note: Deleting from a list while iterating is tricky. Best to delete from end backwards.
     
-    # Loop disabled for now to prevent corruption and verify placeholder logic first.
+    last_filled_index = start_op_index + cases_processed - 1
+    total_slides = len(prs.slides)
+    
+    # We want to keep slides 0..last_filled_index.
+    # Delete everything after max(last_filled_index, start_op_index-1).
+    # (If 0 cases, we keep 0..7, delete 8..end).
+    
+    # Range to delete: From (last_filled_index + 1) to (total_slides - 1)
+    
+    delete_start = last_filled_index + 1
+    
+    # Check if there are slides to delete
+    if delete_start < total_slides:
+        print(f"Removing unused slides from index {delete_start} to {total_slides-1}...")
+        # Delete backwards to avoid index shifting problems
+        for idx in range(total_slides - 1, delete_start - 1, -1):
+            delete_slide(prs, idx)
+    
+    print(f"One-Pager Generation Complete. {cases_processed} slides filled.")
 
     
     # 6. Save Output
@@ -388,11 +455,11 @@ def process_traffic_light_placeholder(shape_or_cell, cases):
             final_color = RGBColor(200, 200, 200) # Default Grey
             
             if "green" in color_val:
-                final_color = RGBColor(0, 176, 80)
+                final_color = RGBColor(87, 162, 55)
             elif "red" in color_val:
                 final_color = RGBColor(255, 0, 0)
             elif "yellow" in color_val:
-                final_color = RGBColor(255, 255, 0)
+                final_color = RGBColor(247, 203, 84)
             elif "grey" in color_val or "gray" in color_val:
                 final_color = RGBColor(128, 128, 128)
             

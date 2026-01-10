@@ -117,10 +117,67 @@ def copy_shape(shape, dest_slide):
     # Use element copying for fidelity
     
     new_el = copy.deepcopy(shape.element)
+    
+    # CRITICAL: Generate new ID to prevent corruption
+    # Shapes must have unique IDs. 
+    # Valid IDs are usually positive integers. 
+    # We can try to assume python-pptx will handle it if we modify it, 
+    # but safest is to let it generate or pick a random high number?
+    # Actually, simpler: removing the cNvPr id attribute might force regeneration on save, 
+    # but python-pptx expects it.
+    
+    # Simple ID generation strategy:
+    # Use a random ID or increment global counter? 
+    # Easier: Just verify duplication doesn't crash. 
+    # The standard way in XML manipulation is typically to create a new ID.
+    
+    # Let's try to remove the ID and see if PPT repairs it, OR standard practice:
+    for sp in new_el.iter():
+        if 'id' in sp.attrib:
+             # This matches many things. We care about p:cNvPr id="..."
+             pass
+             
+    # Target specifically cNvPr
+    check_tags = [
+        '{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr',
+        '{http://schemas.openxmlformats.org/drawingml/2006/main}cNvPr' 
+    ]
+    
+    # We need to find the NonVisualDrawingProps to set a new ID.
+    # But finding the max ID in the slide is hard.
+    # Strategy: Just append it. PPT "Repair" often fixes IDs. 
+    # User said "without corruption".
+    # Better strategy: Do NOT use deepcopy if possible. 
+    # But we need exact formatting.
+    # Okay, I will try to set a unique ID based on hash of time?
+    import time
+    import random
+    unique_id = int(time.time() * 1000) + random.randint(0, 10000)
+    
+    # Find cNvPr
+    # The tag is usually p:nvSpPr -> p:cNvPr
+    # Or p:nvGrpSpPr -> p:cNvPr
+    
+    found_id = False
+    for desc in new_el.iterdescendants():
+        if desc.tag.endswith('cNvPr'):
+             # Set new ID
+             desc.set('id', str(unique_id))
+             # Also Name should probably be unique?
+             desc.set('name', desc.get('name') + f" {unique_id}")
+             found_id = True
+             break
+             
     dest_slide.shapes._spTree.insert_element_before(new_el, 'p:extLst')
     
-    # We verify if we can access it via python-pptx wrapper immediately
-    # Typically this works but python-pptx might not 'see' it in the shapes list immediately without reload
-    # But for our "replace" logic, we might need to iterate dest_slide.shapes
+    dest_slide.shapes._spTree.insert_element_before(new_el, 'p:extLst')
     
     return new_el
+
+def delete_slide(prs, index):
+    """
+    Delete a slide from the presentation by index.
+    """
+    xml_slides = prs.slides._sldIdLst
+    slides = list(xml_slides)
+    xml_slides.remove(slides[index])
