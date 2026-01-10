@@ -19,6 +19,42 @@ TEMPLATE_PATH = os.path.join(BASE_DIR, "..", "PPTWITHPLACEHOLDERS.pptx")
 FMT_TITLE = {"bold": True, "font_size": 7, "color": RGBColor(0, 176, 240)}
 FMT_DATE = {"bold": True, "font_size": 7, "color": RGBColor(0, 0, 0)}
 
+HEATMAP_CONFIGS = [
+    {
+        "name": "Marketing",
+        "filter": "Marketing",
+        "slides": [1, 2], # Slide 2 & 3
+        "regex_title": r"\{\{Marketing\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
+        "fmt_title": "{{{{Marketing USE CASE Title {idx}}}}}",
+        "fmt_status": "{{{{StatusupdateUC{idx}Marketing}}}}",
+        "key_owner": "{{UseCaseOwnerMarketing}}",
+        "fmt_date_d": "{{{{MD{idx}}}}}",
+        "fmt_date_a": "{{{{MA{idx}}}}}"
+    },
+    {
+        "name": "Sales",
+        "filter": "Sales",
+        "slides": [3, 4], # Slide 4 & 5
+        "regex_title": r"\{\{SALES\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
+        "fmt_title": "{{{{SALES USE CASE Title {idx}}}}}",
+        "fmt_status": "{{{{StatusupdateUC{idx}Sales}}}}",
+        "key_owner": "{{UseCaseOwnerSales}}",
+        "fmt_date_d": "{{{{SD{idx}}}}}",
+        "fmt_date_a": "{{{{SA{idx}}}}}"
+    },
+    {
+        "name": "Compliance",
+        "filter": "Compliance",
+        "slides": [5], # Slide 6
+        "regex_title": r"\{\{Compliance\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
+        "fmt_title": "{{{{Compliance USE CASE Title {idx}}}}}",
+        "fmt_status": "{{{{StatusupdateUC{idx}Compliance}}}}",
+        "key_owner": "{{UseCaseOwnerCompliance}}",
+        "fmt_date_d": "{{{{COD{idx}}}}}",
+        "fmt_date_a": "{{{{COA{idx}}}}}"
+    }
+]
+
 def process_ppt(csv_path, output_folder):
     """
     Processes the PPT using data from the uploaded CSV.
@@ -141,42 +177,6 @@ def process_ppt(csv_path, output_folder):
         
     # 4. Slide 2-6 Logic (Heatmaps / Status Slides)
     # Generic Logic for Marketing, Sales, Compliance
-    
-    HEATMAP_CONFIGS = [
-        {
-            "name": "Marketing",
-            "filter": "Marketing",
-            "slides": [1, 2], # Slide 2 & 3
-            "regex_title": r"\{\{Marketing\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
-            "fmt_title": "{{{{Marketing USE CASE Title {idx}}}}}",
-            "fmt_status": "{{{{StatusupdateUC{idx}Marketing}}}}",
-            "key_owner": "{{UseCaseOwnerMarketing}}",
-            "fmt_date_d": "{{{{MD{idx}}}}}",
-            "fmt_date_a": "{{{{MA{idx}}}}}"
-        },
-        {
-            "name": "Sales",
-            "filter": "Sales",
-            "slides": [3, 4], # Slide 4 & 5
-            "regex_title": r"\{\{SALES\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
-            "fmt_title": "{{{{SALES USE CASE Title {idx}}}}}",
-            "fmt_status": "{{{{StatusupdateUC{idx}Sales}}}}",
-            "key_owner": "{{UseCaseOwnerSales}}",
-            "fmt_date_d": "{{{{SD{idx}}}}}",
-            "fmt_date_a": "{{{{SA{idx}}}}}"
-        },
-        {
-            "name": "Compliance",
-            "filter": "Compliance",
-            "slides": [5], # Slide 6
-            "regex_title": r"\{\{Compliance\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
-            "fmt_title": "{{{{Compliance USE CASE Title {idx}}}}}",
-            "fmt_status": "{{{{StatusupdateUC{idx}Compliance}}}}",
-            "key_owner": "{{UseCaseOwnerCompliance}}",
-            "fmt_date_d": "{{{{COD{idx}}}}}",
-            "fmt_date_a": "{{{{COA{idx}}}}}"
-        }
-    ]
 
     for config in HEATMAP_CONFIGS:
         # Filter Cases (LoB + CDP Business Adoption)
@@ -238,19 +238,40 @@ def process_ppt(csv_path, output_folder):
             "formatting": {"font_size": 7, "color": RGBColor(0,0,0)}
         }
         
+        
     for slide_idx in foundational_slides:
         if slide_idx >= len(prs.slides): continue
         slide = prs.slides[slide_idx]
         
+        # Iterate Shapes AND Process Coloring (Explicit {{prX}})
         for shape in slide.shapes:
+            # 1. Standard Replacement (Title, Owner, Overall Status)
             replace_text_in_shape(shape, f_replacements)
+            
+            # 2. Traffic Light Coloring (via {{prX}} placeholder)
+            # We must scan specifically for {{prX}} patterns.
+            # This can be in a text_frame (independent shape) or a table cell.
+            
+            if shape.has_table:
+                for row in shape.table.rows:
+                    for cell in row.cells:
+                        process_traffic_light_placeholder(cell, foundational_cases)
+            
+            if shape.has_text_frame:
+                process_traffic_light_placeholder(shape, foundational_cases)
+
     
     FMT_OP_TEXT = {"font_size": 10, "color": RGBColor(0,0,0)}
     
     # Re-gather all cases in LOB order
     ordered_cases = []
-    for config in LOB_CONFIGS:
-        lob_cases = [c for c in all_cases if config["filter"] in getattr(c, "business_unit", "")]
+    
+    for config in HEATMAP_CONFIGS:
+        # lob_cases = [c for c in all_cases if config["filter"] in getattr(c, "business_unit", "")]
+        lob_cases = []
+        for c in all_cases:
+            if config["filter"] in getattr(c, "business_unit", ""):
+                lob_cases.append(c)
         ordered_cases.extend(lob_cases)
 
     # 5. One-Pager Generation (TEST: Fill Last Slide Only)
@@ -343,3 +364,41 @@ def process_heatmap_cell(text_frame, cases, config):
             
             # Apply replacements to this text frame
             process_text_frame(text_frame, replacements)
+
+def process_traffic_light_placeholder(shape_or_cell, cases):
+    """
+    Checks if shape/cell contains {{prX}}. 
+    If yes, colors the background based on case status and REMOVES the text.
+    """
+    if not hasattr(shape_or_cell, "text_frame"): return
+    
+    text = shape_or_cell.text_frame.text
+    import re
+    # Match {{pr1}}, {{pr2}}, etc.
+    match = re.search(r"\{\{pr(\d+)\}\}", text, re.IGNORECASE)
+    
+    if match:
+        idx = int(match.group(1))
+        c_idx = idx - 1
+        
+        if 0 <= c_idx < len(cases):
+            case = cases[c_idx]
+            color_val = getattr(case, "traffic_light", "").strip().lower()
+            
+            final_color = RGBColor(200, 200, 200) # Default Grey
+            
+            if "green" in color_val:
+                final_color = RGBColor(0, 176, 80)
+            elif "red" in color_val:
+                final_color = RGBColor(255, 0, 0)
+            elif "yellow" in color_val:
+                final_color = RGBColor(255, 255, 0)
+            elif "grey" in color_val or "gray" in color_val:
+                final_color = RGBColor(128, 128, 128)
+            
+            # Apply Color
+            shape_or_cell.fill.solid()
+            shape_or_cell.fill.fore_color.rgb = final_color
+            
+            # Remove the placeholder text
+            shape_or_cell.text_frame.text = ""

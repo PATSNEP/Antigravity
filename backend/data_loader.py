@@ -19,7 +19,8 @@ COLUMN_MAPPING = {
     "cr4e2_scope": "scope",
     "cr4e2_problemstatement": "problem_statement",
     "cr4e2_usecasetype@OData.Community.Display.V1.FormattedValue": "use_case_type",
-    "cr4e2_overallstatus": "overall_status"
+    "cr4e2_overallstatus": "overall_status",
+    "cr4e2_pr@OData.Community.Display.V1.FormattedValue": "traffic_light"
 }
 
 class UseCase:
