@@ -2,6 +2,7 @@ import os
 from pptx import Presentation
 from pptx.util import Pt
 from pptx.dml.color import RGBColor
+import re
 try:
     from backend.data_loader import load_data
     from backend.ppt_utils import replace_text_in_shape, duplicate_slide, delete_slide
@@ -209,6 +210,53 @@ def process_ppt(csv_path, output_folder):
             for shape in slide.shapes:
                 if shape.has_table:
                     for row in shape.table.rows:
+                        
+                        # 1. Identify Case for this Row logic
+                        # We must find the Title Placeholder to know which Case ID this row is.
+                        # Usually Col 0.
+                        row_case_idx = -1
+                        row_case = None
+                        
+                        # Scan Col 0 for Title Regex
+                        if len(row.cells) > 0:
+                            c0_text = row.cells[0].text_frame.text
+                            match = re.search(config["regex_title"], c0_text, re.IGNORECASE)
+                            if match:
+                                idx_found = int(match.group(1))
+                                row_case_idx = idx_found - 1 # 0-based
+                                if 0 <= row_case_idx < len(cases):
+                                    row_case = cases[row_case_idx]
+
+                        # 2. Apply Heatmap Coloring if Case Found
+                        if row_case:
+                            # Parse Heatmap Status Step (e.g. "7. Technical...")
+                            hm_status_str = getattr(row_case, "heatmap_status", "").strip()
+                            current_step = 0
+                            step_match = re.match(r"^(\d+)\.", hm_status_str)
+                            if step_match:
+                                current_step = int(step_match.group(1))
+                            
+                            # Colors
+                            COLOR_LIGHT_GREEN = RGBColor(226, 239, 217)
+                            COLOR_DARK_GREEN = RGBColor(87, 162, 55)
+                            COLOR_WHITE = RGBColor(255, 255, 255)
+                            
+                            # Iterate Heatmap Columns (1 to 8)
+                            # Assuming Table Structure: Col 0=Title, Col 1..8=Steps, Col 9=Completeness
+                            for step_col in range(1, 9):
+                                if step_col >= len(row.cells): break
+                                
+                                cell = row.cells[step_col]
+                                cell.fill.solid()
+                                
+                                if step_col < current_step:
+                                    cell.fill.fore_color.rgb = COLOR_LIGHT_GREEN
+                                elif step_col == current_step:
+                                    cell.fill.fore_color.rgb = COLOR_DARK_GREEN
+                                else:
+                                    cell.fill.fore_color.rgb = COLOR_WHITE
+                        
+                        # 3. Process Text Replacements (Standard)
                         for cell in row.cells:
                             process_heatmap_cell(cell.text_frame, cases, config)
                             process_completeness_placeholder(cell.text_frame, cases, config)
