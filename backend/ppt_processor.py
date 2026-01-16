@@ -434,6 +434,9 @@ def process_ppt(csv_path, output_folder):
     
     print(f"One-Pager Generation Complete. {cases_processed} slides filled.")
 
+    # 7. Auto-Cleanup: Remove ANY remaining placeholders {{...}}
+    cleanup_unused_placeholders(prs)
+
     
     # 6. Save Output
     output_filename = "Final_Report.pptx"
@@ -625,3 +628,80 @@ def process_date_placeholders(text_frame, cases, config):
             
     if found_any:
         process_text_frame(text_frame, replacements)
+        
+def cleanup_unused_placeholders(prs):
+    """
+    Iterates through all slides and shapes (including groups), removing any 
+    remaining text that matches the placeholder pattern {{...}}.
+    """
+    import re
+    # Pattern: {{ followed by any chars (including newlines) followed by }}
+    pattern = re.compile(r"\{\{.*?\}\}", re.DOTALL)
+    
+    print("Running Cleanup: Removing unused placeholders...")
+    
+    cleaned_count = 0
+    
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+    
+    def iter_shapes(shapes):
+        """Recursively iterate through groups."""
+        for shape in shapes:
+            if shape.shape_type == MSO_SHAPE_TYPE.GROUP:
+                yield from iter_shapes(shape.shapes)
+            else:
+                yield shape
+    
+    for slide in prs.slides:
+        # Use recursive iterator to handle grouped shapes
+        for shape in iter_shapes(slide.shapes):
+            
+            # Helper to process text frame by PARAGRAPHS (formatting-safe)
+            def clean_frame(tf):
+                count = 0
+                for p in tf.paragraphs:
+                    # Strategy 1: Check if paragraph implies it's ONLY a placeholder (or multiple)
+                    # If so, we safely clear it by keeping the first run (to preserve font/bullet)
+                    # and emptying the rest. This handles "split runs" effectively.
+                    stripped_text = p.text.strip()
+                    if stripped_text.startswith("{{") and stripped_text.endswith("}}"):
+                        # Double check it matches the pattern fully or contains ONLY placeholders
+                        # For simplicity, if it matches our placeholder pattern, we treat it as valid to clear.
+                        # Using regex to verify it is indeed a placeholder structure we want to remove.
+                         if pattern.fullmatch(stripped_text) or pattern.search(stripped_text):
+                             # SAFE CLEAR:
+                             # 1. Set first run to specialized space (preserving font size)
+                             if len(p.runs) > 0:
+                                 p.runs[0].text = " "
+                                 # 2. Clear subsequent runs
+                                 for r in p.runs[1:]:
+                                     r.text = ""
+                                 count += 1
+                                 continue
+                    
+                    # Strategy 2: Fallback for Mixed Content (Inline placeholders)
+                    # This only works if the placeholder is NOT split across runs. 
+                    # If it is split in mixed content, it ignores it to be safe.
+                    for run in p.runs:
+                        if "{{" in run.text:
+                             new_text, n = pattern.subn(" ", run.text)
+                             if n > 0:
+                                 run.text = new_text
+                                 count += n
+                return count
+
+            # 1. Text Frames
+            if shape.has_text_frame:
+                if shape.text_frame.text:
+                    cleaned_count += clean_frame(shape.text_frame)
+                        
+            # 2. Tables
+            if shape.has_table:
+                for row in shape.table.rows:
+                    for cell in row.cells:
+                        if cell.text_frame.text:
+                            cleaned_count += clean_frame(cell.text_frame)
+                                
+    print(f"Cleanup Complete. Removed {cleaned_count} placeholder fragments.")
+
+
