@@ -29,7 +29,11 @@ HEATMAP_CONFIGS = [
         "fmt_status": "{{{{StatusupdateUC{idx}Marketing}}}}",
         "key_owner": "{{UseCaseOwnerMarketing}}",
         "fmt_date_d": "{{{{MD{idx}}}}}",
-        "fmt_date_a": "{{{{MA{idx}}}}}"
+        "fmt_date_a": "{{{{MA{idx}}}}}",
+        "fmt_completeness": "{{{{OCM{idx}}}}}",
+        "regex_completeness": r"\{\{OCM(\d+)\}\}",
+        "regex_date_d": r"\{\{MD(\d+)\}\}",
+        "regex_date_a": r"\{\{MA(\d+)\}\}"
     },
     {
         "name": "Sales",
@@ -40,7 +44,11 @@ HEATMAP_CONFIGS = [
         "fmt_status": "{{{{StatusupdateUC{idx}Sales}}}}",
         "key_owner": "{{UseCaseOwnerSales}}",
         "fmt_date_d": "{{{{SD{idx}}}}}",
-        "fmt_date_a": "{{{{SA{idx}}}}}"
+        "fmt_date_a": "{{{{SA{idx}}}}}",
+        "fmt_completeness": "{{{{OCS{idx}}}}}",
+        "regex_completeness": r"\{\{OCS(\d+)\}\}",
+        "regex_date_d": r"\{\{SD(\d+)\}\}",
+        "regex_date_a": r"\{\{SA(\d+)\}\}"
     },
     {
         "name": "Compliance",
@@ -51,7 +59,11 @@ HEATMAP_CONFIGS = [
         "fmt_status": "{{{{StatusupdateUC{idx}Compliance}}}}",
         "key_owner": "{{UseCaseOwnerCompliance}}",
         "fmt_date_d": "{{{{COD{idx}}}}}",
-        "fmt_date_a": "{{{{COA{idx}}}}}"
+        "fmt_date_a": "{{{{COA{idx}}}}}",
+        "fmt_completeness": "{{{{OCC{idx}}}}}",
+        "regex_completeness": r"\{\{OCC(\d+)\}\}",
+        "regex_date_d": r"\{\{COD(\d+)\}\}",
+        "regex_date_a": r"\{\{COA(\d+)\}\}"
     }
 ]
 
@@ -199,9 +211,13 @@ def process_ppt(csv_path, output_folder):
                     for row in shape.table.rows:
                         for cell in row.cells:
                             process_heatmap_cell(cell.text_frame, cases, config)
+                            process_completeness_placeholder(cell.text_frame, cases, config)
+                            process_date_placeholders(cell.text_frame, cases, config)
                 
                 if shape.has_text_frame:
                     process_heatmap_cell(shape.text_frame, cases, config)
+                    process_completeness_placeholder(shape.text_frame, cases, config)
+                    process_date_placeholders(shape.text_frame, cases, config)
     
     # 5. Slide 7 & 8 Logic (Foundational Use Cases)
     # Filter: Type="CDP Foundational Use Case" (Any BU)
@@ -426,8 +442,25 @@ def process_heatmap_cell(text_frame, cases, config):
             key_date_d = config["fmt_date_d"].format(idx=idx)
             key_date_a = config["fmt_date_a"].format(idx=idx)
             
-            replacements[key_date_d] = {"text": case.delivery_date, "formatting": FMT_DATE}
-            replacements[key_date_a] = {"text": case.adoption_date, "formatting": FMT_DATE}
+            # Format: Size 10, Not Bold (User Request)
+            FMT_HM_DATE = {"font_size": 10, "bold": False, "color": RGBColor(0,0,0)}
+            
+            replacements[key_date_d] = {"text": case.delivery_date, "formatting": FMT_HM_DATE}
+            replacements[key_date_a] = {"text": case.adoption_date, "formatting": FMT_HM_DATE}
+            
+            # 5. Overall Completeness
+            if "fmt_completeness" in config:
+                key_comp = config["fmt_completeness"].format(idx=idx)
+                comp_val = getattr(case, "overall_completeness", "")
+                
+                # Default Formatting: Size 10, Not Bold
+                comp_fmt = {"font_size": 10, "color": RGBColor(0,0,0), "bold": False}
+                
+                # Conditional Formatting: If 100%, set to Green (87, 162, 55)
+                if "100%" in str(comp_val):
+                    comp_fmt["color"] = RGBColor(87, 162, 55)
+                    
+                replacements[key_comp] = {"text": comp_val, "formatting": comp_fmt}
             
             # Apply replacements to this text frame
             process_text_frame(text_frame, replacements)
@@ -469,3 +502,78 @@ def process_traffic_light_placeholder(shape_or_cell, cases):
             
             # Remove the placeholder text
             shape_or_cell.text_frame.text = ""
+
+def process_completeness_placeholder(text_frame, cases, config):
+    """
+    Scans for completeness placeholders (e.g. {{OCM1}}) independently of Title.
+    """
+    if "regex_completeness" not in config: return
+    
+    import re
+    try:
+        from backend.ppt_utils import process_text_frame
+    except ImportError:
+        from ppt_utils import process_text_frame
+        
+    text = text_frame.text
+    match = re.search(config["regex_completeness"], text, re.IGNORECASE)
+    
+    if match:
+        idx = int(match.group(1))
+        case_idx = idx - 1
+        
+        if 0 <= case_idx < len(cases):
+            case = cases[case_idx]
+            
+            key_comp = config["fmt_completeness"].format(idx=idx)
+            comp_val = getattr(case, "overall_completeness", "")
+            
+            comp_fmt = {"font_size": 10, "color": RGBColor(0,0,0), "bold": False} # Default
+            if "100%" in str(comp_val):
+                comp_fmt["color"] = RGBColor(87, 162, 55)
+            
+            process_text_frame(text_frame, {key_comp: {"text": comp_val, "formatting": comp_fmt}})
+
+def process_date_placeholders(text_frame, cases, config):
+    """
+    Scans for Date placeholders (e.g. {{MD1}}, {{MA1}}) independently.
+    """
+    if "regex_date_d" not in config or "regex_date_a" not in config: return
+    
+    import re
+    try:
+        from backend.ppt_utils import process_text_frame
+    except ImportError:
+        from ppt_utils import process_text_frame
+        
+    text = text_frame.text
+    replacements = {}
+    found_any = False
+    
+    # Format: Size 10, Not Bold (User Request)
+    FMT_HM_DATE = {"font_size": 10, "bold": False, "color": RGBColor(0,0,0)}
+    
+    # Check Delivery Date
+    match_d = re.search(config["regex_date_d"], text, re.IGNORECASE)
+    if match_d:
+        idx = int(match_d.group(1))
+        case_idx = idx - 1
+        if 0 <= case_idx < len(cases):
+            case = cases[case_idx]
+            key = config["fmt_date_d"].format(idx=idx)
+            replacements[key] = {"text": case.delivery_date, "formatting": FMT_HM_DATE}
+            found_any = True
+            
+    # Check Adoption Date
+    match_a = re.search(config["regex_date_a"], text, re.IGNORECASE)
+    if match_a:
+        idx = int(match_a.group(1))
+        case_idx = idx - 1
+        if 0 <= case_idx < len(cases):
+            case = cases[case_idx]
+            key = config["fmt_date_a"].format(idx=idx)
+            replacements[key] = {"text": case.adoption_date, "formatting": FMT_HM_DATE}
+            found_any = True
+            
+    if found_any:
+        process_text_frame(text_frame, replacements)
