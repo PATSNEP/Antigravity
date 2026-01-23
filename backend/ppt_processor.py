@@ -65,6 +65,21 @@ HEATMAP_CONFIGS = [
         "regex_completeness": r"\{\{OCC(\d+)\}\}",
         "regex_date_d": r"\{\{COD(\d+)\}\}",
         "regex_date_a": r"\{\{COA(\d+)\}\}"
+    },
+    {
+        "name": "Customer Success",
+        "filter": "Customer Success",
+        "slides": [6], # Slide 7
+        "regex_title": r"\{\{CS\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
+        "fmt_title": "{{{{CS USE CASE Title {idx}}}}}",
+        "fmt_status": "{{{{StatusupdateUC{idx}CS}}}}",
+        "key_owner": "{{UseCaseOwnerCS}}",
+        "fmt_date_d": "{{{{CUD{idx}}}}}",
+        "fmt_date_a": "{{{{CUA{idx}}}}}",
+        "fmt_completeness": "{{{{OCCS{idx}}}}}",
+        "regex_completeness": r"\{\{OCCS(\d+)\}\}",
+        "regex_date_d": r"\{\{CUD(\d+)\}\}",
+        "regex_date_a": r"\{\{CUA(\d+)\}\}"
     }
 ]
 
