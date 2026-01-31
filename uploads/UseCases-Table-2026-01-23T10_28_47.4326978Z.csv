@@ -1,0 +1,94 @@
+@odata.etag,cr4e2_businessunit@OData.Community.Display.V1.FormattedValue,cr4e2_businessunit,cr4e2_businessadoptiondate,cr4e2_lateststatusupdate,cr4e2_overallcompleteness@OData.Community.Display.V1.FormattedValue,cr4e2_overallcompleteness,cr4e2_usecasetitle,cr4e2_owner,cr4e2_businesscontacts,cr4e2_affectedkeyusers,cr4e2_deliverydate,cr4e2_lineofbusiness,cr4e2_heatmamapping@OData.Community.Display.V1.FormattedValue,cr4e2_heatmamapping,cr4e2_owneremail,cr4e2_value,cr4e2_overallstatus,cr4e2_scope,cr4e2_marketingid,cr4e2_problemstatement,cr4e2_usecasetype@OData.Community.Display.V1.FormattedValue,cr4e2_usecasetype,cr4e2_pr@OData.Community.Display.V1.FormattedValue,cr4e2_pr
+"W/""3254824""",Marketing,743090000,01.26,"Features closed (CDP | Drop-down menu with values), done 
+Data into the new behavioral Data Schema
+
+",100,100,ITDYM-4319 – CDP MVP | RISE Program,Nitin Singh,Dennis Flick,Buying Committee,06.25,Marketing,7. Technical Go-Live,743090006,fatima-zahra.elazraq@stud.fra-uas.de,"Value Measurement:
+Generate net new contacts (opt-in)
+Among others, increase Ad, Web and Buying Committee Engagement, and engagement score 
+
+KPI to be measured: 
+Reach X% (penetration rate) into Accounts 
+Engagement: Increase number, frequency and quality of interactions / X% increase in engagement and asset consumption rates
+Generate X% new marketable contacts within targeted accounts
+","Testing in CRM completed, one more change done in CRM, E2E testing in progress by Krishna – to be verified by Suzanne this week
+Next step: move to production
+","Market(s): Austria & Nordics. Persona (“sub-IDP”): CIO
+Segment: ECC customers engaged with marketing, no pipeline, with medium to large Maintenance Revenue Band (>100k - <500k [medium] & >500k [large])
+TAL as of Q4 2024: # Austria = 153 Accounts / # Nordics = 149 Accounts (Denmark, Norway, Iceland, Sweden, Finland combined)
+",1753eaf9-d4e8-f011-8406-000d3ab7bcc2,"Help accelerate customers to our cloud by demonstrating value at key accounts, particularly for key decision makers and influencers (finance & operations)
+Map marketing engagement to pipeline forecast (aligned across marketing & sales) to drive new opportunities (revenue) by building reputation and relationships through relevant reach & engagement touchpoints for all target and hidden buyer personas of the RISE Buying Committees from our target accounts.
+Target RISE accounts in LinkedIn
+",CDP Business Adoption,743090000,,
+"W/""3217807""",Compliance,743090002,02.26,this is the latest status update for test purposes,35,35,SP-27120 - China CBDT- Long Term Compliance,Tristan Raver,Marketing: Zuzana Mihalikova & Silvie Mezirkova,Field Marketing China Field Sales China Data privacy operations,02.26,"Marketing, Sales, DPP",5. Feature Development,743090004,fatima-zahra.elazraq@stud.fra-uas.de,"Data Privacy and Protection,  Compliance with local regulations
+Centralized and automated tracking and notifications of revoke and resulting need to delete personal data
+","Testing of match and merge completed, SAM matching/ testing completed. Documentation of findings in progress. 
+","When a contact revokes CBDT, SAP should delete the contact record from all global systems (SMC, MDG, CRM, ISP, PRM...) and as CDP will receive the revoke from the consent repository and identify the various source systems in which the contact is present.  
+We would like to trigger a notification (email workflow) to DPP Operations (recipient (privacy@SAP.com) (tbc) & email content to be confirmed) when a revoke is received which includes information regarding the source systems and identifiers for the contact to be deleted.
+",79b06fec-51e9-f011-8406-000d3ab7bcc2,"China has instituted a data privacy law which requires that a citizen of China must be able to grant or revoke cross-boarder data transfer (CBDT) of their personal information
+In order to comply with CBDT consent SAP must react to a revoke by deleting the individuals personal data from all global systems
+Local consent repository established to capture CBDT consent but missing transparency and recognition of real-time revocation 
+",CDP Business Adoption,743090000,,
+"W/""3261593""",Sales,743090001,02.26,"Started in Sprint 4 (Oct 20), collect requirements, then check feasibility",85,85,SP-2234 - 180 SMC PoC,"Carol Marchesy, Nitin Singil",Suzanne McFady,Sales,01.26,Sales,5. Feature Development,743090004,patrick.schnepf@stud.fra-uas.de,"Value Measurement:​
+Single Source of Truth
+Scalable Foundation
+KPI to be measured",test,"Transition EDP
+Phase 1 : Sync EDP and Outreach 
+Solution Contacts​
+Key Contacts​
+Phase 2 : Expand EDP ",69c66e4b-13ea-f011-8406-000d3ab7bcc2,"Currently, CRM is the primary source for managing contacts",CDP Business Adoption,743090000,Green,743090001
+"W/""3261400""",Sales,743090001,03.26,"CDP feasibility check completed, Foued reviewed results
+",,,SP-2222 - [PoC] ,Semal Korzan,-,-,02.26,"Sales, Marketing",3. Use Case Finalized by Business,743090002,patrick.schnepf@stud.fra-uas.de,"    Following target architecture to have CDP as central place for derived fields.​
+
+    ","contingent on development of CCRMS 
+
+","Check feasibility of rebuilding the classifications as a derived field in CDP​
+
+    ",4b3f1c03-18ea-f011-8406-000d3ab7bcc2,"A contact’s role can be identified based on their xLoB process interactions 
+
+",CDP Foundational Use Case,743090001,Green,743090001
+"W/""3254951""",Compliance,743090002,01.26,This status upadet is for testing reasons,,,Contact Interest Intelligence (CII) Integration in CDP - PoC,UC Owner,Mara Musterfrau,Sales,11.25,CS,7. Technical Go-Live,743090006,fatima-zahra.elazraq@stud.fra-uas.de,"Legitimate interest will be calculated in CII at the solution and sub-solution area level
+Calculated legitimate Interest will be stored in CDP as contact attributes at the solution and sub-solution area level
+Calculating and storing legitimate interest at the solution area and sub-solution area level supports integrated demand programs (solution area) and sales processes (sub-solution area). 
+
+","In analysis (checking req. and acceptance criteria), started
+Check feasibility on CDP side (Foued) ongoing. Started in sprint 4 (Oct 20)
+
+","Integrating the CII service in the Central Person Profile will provide for central/direct consumption by Marketing for execution/segmentation as well as in target systems such as Outreach for Sales 
+Benefits of CII:
+Improved Data 
+",9aaa63ef-8ded-f011-8406-000d3ab7bcc2,"SAP’s current Person landscape (customer, supplier, partner, prospects) is highly segmented
+No single source of truth for Person
+",CDP Foundational Use Case,743090001,Green,743090001
+"W/""3261596""",Marketing,743090000,03.26,"Behavioral events mapped, engagement model validated, pilot running",85,85,Account-Based Engagement Scoring,Julia Weber,"Marketing Ops, Digital Campaigns","ABM Managers, Campaign Leads",02.26,Marketing,6. Testing & Business Sign-off,743090005,patrick.schnepf@stud.fra-uas.de,"Increase engagement relevance and prioritization of target accounts. KPI: +20% engagement score, +15% CTR",,"Target Accounts in EMEA, Personas: CIO, CMO
+Value",ddbbc7e9-3ef8-f011-8407-000d3ab7bcc2,Lack of consistent engagement scoring across channels leads to inefficient ABM prioritization,CDP Business Adoption,743090000,,
+"W/""3261726""",Compliance,743090002,02.26,"Consent objects aligned, integration tested",95,95,CMP-CPM-3301 – Unified Consent & Preference Center,Sophie Lang,Data Privacy Ops,"Legal, Marketing Ops",01.26,"Compliance, Marketing",7. Technical Go-Live,743090006,patrick.schnepf@stud.fra-uas.de,Ensure regulatory compliance and transparent consent management,Fragmented consent storage creates compliance risks,"Global contacts, GDPR & CBDT",d79c62d0-3ff8-f011-8407-000d3ab7bcc2,Fragmented consent storage creates compliance risks,CDP Business Adoption,743090000,,
+"W/""3261828""",Sales,743090001,08.26,"Attribution model defined, CDP–CRM sync live",85,85,SAL-OIA-4410 – Opportunity Influence Attribution,Daniel Roth,Revenue Ops,Sales Management,08.26,Sales,5. Feature Development,743090004,patrick.schnepf@stud.fra-uas.de,Improve forecast accuracy and marketing-sales alignment,,Strategic Accounts,f61e692b-40f8-f011-8407-000d3ab7bcc2,Lack of transparency on marketing influence on pipeline,CDP Business Adoption,743090000,,
+"W/""3262079""",Marketing,743090000,06.26,Identity stitching logic finalized ...,85,85,MKT-AKV-5520 – Anonymous to Known Visitor Conversion,Laura Meier,Web Analytics,Digital Marketing,07.26,Marketing,7. Technical Go-Live,743090006,patrick.schnepf@stud.fra-uas.de,"ncrease known profiles by X%, improve personalization",,Web traffic EMEA,d016d48b-40f8-f011-8407-000d3ab7bcc2,High share of anonymous visitors limits personalization,CDP Business Adoption,743090000,,
+"W/""3261866""",Customer Success,743090003,05.26,Development,85,85,CS-HSM-8801 – Customer Health Score Monitoring,Felix Braun,CS Ops,Customer Success Managers,05.26,CS,6. Testing & Business Sign-off,743090005,patrick.schnepf@stud.fra-uas.de,Reduce churn risk,,No unified view on customer health,a6bad428-41f8-f011-8407-000d3ab7bcc2,Strategic Customers,CDP Business Adoption,743090000,,
+"W/""3261878""",Compliance,743090002,09.26,Retention rules implemented,,,CMP-DRE-1001 – Automated Data Retention Enforcement,Petra König,Data Privacy Ops,"Legal, IT",08.26,Compliance,4. Definition of Business Requirement,743090003,patrick.schnepf@stud.fra-uas.de,Reduce compliance risk,Gathering & reviwing business requirements,Global,974e6f98-41f8-f011-8407-000d3ab7bcc2,Manual retention handling is error-prone,CDP Foundational Use Case,743090001,Green,743090001
+"W/""3261896""",Marketing,743090000,04.26,"Audience logic finalized, CDP segments validated, activation test started",,,MKT-AUD-1103 – Dynamic Audience Segmentation,Lena Fischer,"Marketing Ops, Analytics","Campaign Managers, ABM Leads",04.26,Marketing,6. Testing & Business Sign-off,743090005,patrick.schnepf@stud.fra-uas.de,"Improve targeting precision and campaign relevance, KPI: +15% conversion rate on segmented audiences",Development ongoing,"EMEA accounts, personas CIO and IT Decision Makers",88afb507-42f8-f011-8407-000d3ab7bcc2,Static audiences limit responsiveness to behavioral changes,CDP Foundational Use Case,743090001,Green,743090001
+"W/""3262077""",Marketing,743090000,10.2025,Testing,30,30,ITDYM-4000 – CDP MVP ,Nitingi Singili,Den Frickel,Buying Committee,12.2025,Austria + Nordics,4. Definition of Business Requirement,743090003,fatima-zahra.elazraq@stud.fra-uas.de,"Generate net new contacts​
+Among others, increase Ad
+​","Started in Sprint 4 (Oct 20), collect requirements, then check feasibility
+","​
+Market(s): Austria & Nordics. Persona (“sub-IDP”): CIO​
+Segment: ECC customers engaged with marketing, no pipeline, with medium to large Maintenance Revenue Band (>100k - <500k [medium] & >500k [large])​
+TAL as of Q4 2024: # Austria = 153 Accounts / # Nordics = 149 Accounts (Denmark, Norway, Iceland, Sweden, Finland combined)",67d1f085-1fd4-f011-8543-7ced8d3fcfd2,"Help accelerate customers to our cloud by demonstrating value at key accounts, particularly for key decision makers and influencers (finance & operations)​
+Map marketing engagement to pipeline forecast (aligned across marketing & sales) to drive new opportunities (revenue) by building reputation and relationships through relevant reach & engagement touchpoints for all target and hidden buyer personas of the RISE Buying Committees from our target accounts.​
+Target RISE accounts in LinkedIn",CDP Business Adoption,743090000,,
+"W/""3261474""",Sales,743090001,01.26,"Implemented fix for mandatory job 
+
+",85,85,SP-243 – Integration inInbound,Krishna Angurala,"Jeff Ingrast, Tristian Raver",Buying Committee,10.25,Marketing,6. Testing & Business Sign-off,743090005,patrick.schnepf@stud.fra-uas.de,"Implementing robust contact synchronization 
+
+",this an overall status for testing purposes,"The scope includes:
+Data Synchronization:
+Establish a process to update contacts between C4C and Outreach via CDP.
+
+
+",ecaaa5d9-d5e8-f011-8406-7ced8d731874,"NGCS project aims to develop a reliable and efficient synchronization mechanism.
+
+",CDP Business Adoption,743090000,Green,743090001
+"W/""3259837""",Customer Success,743090003,06.2026,This is the lsu for test purposes,,,Net New Account Qualification & Conversion Processes,Krishn Kumala,Peter Zwegat,Marketing,04.2026,IDM,8. Business Adoption,743090007,patrick.schnepf@stud.fra-uas.de,This is the v&kpi for test purposes,This is the os for test purposes,This is the scope for test purposes,a5a49d77-aeef-f011-8406-7ced8d731874,This is the ps for test purposes,CDP Foundational Use Case,743090001,Green,743090001
+"W/""3261603""",Sales,743090001,06.26,"Lead scoring model trained, CRM sync ongoing",,,SAL-PLQ-2098 – Predictive Lead Qualification,Markus Klein,Sales Ops,"SDRs, Account Executives",06.26,"Sales, Amrketing",5. Feature Development,743090004,patrick.schnepf@stud.fra-uas.de,"ncrease SQL conversion rate by X%, reduce manual qualification effort",Testing in Sales Sandbox,EMEA Mid-Market Accounts,dae49f3e-3ff8-f011-8406-7ced8d731874,Manual lead qualification is inconsistent and not scalable,CDP Foundational Use Case,743090001,Green,743090001
+"W/""3261929""",Sales,743090001,05.26,"Scoring logic aligned with sales leadership, pilot running in CRM",,,SAL-ACC-1207 – Account Prioritization Scoring,Stefan Müller,Sales Ops,Account Executives,03.26,"Sales, CS",5. Feature Development,743090004,patrick.schnepf@stud.fra-uas.de,"Increase focus on high-potential accounts, KPI: higher win rate on prioritized accounts",,Strategic and Named Accounts,5960206e-42f8-f011-8406-7ced8d731874,Sales teams lack data-driven prioritization of accounts,CDP Business Adoption,743090000,,
+"W/""3261935""",Customer Success,743090003,10.26,"Usage KPIs mapped, dashboard prototype ready",,,CS-USE-1402 – Product Usage Analytics,Miriam Vogt,Customer Success Managers,CS Ops,10.26,"CS, Marketing",2. Architecture & Feasibility Check,743090001,patrick.schnepf@stud.fra-uas.de,Early identification of adoption risks and upsell potential,Design,Cloud customers EMEA,d3599fd1-42f8-f011-8406-7ced8d731874,Limited visibility into actual product usage,CDP Foundational Use Case,743090001,Grey,743090000
