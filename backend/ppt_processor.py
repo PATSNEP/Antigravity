@@ -80,6 +80,21 @@ HEATMAP_CONFIGS = [
         "regex_completeness": r"\{\{OCCS(\d+)\}\}",
         "regex_date_d": r"\{\{CUD(\d+)\}\}",
         "regex_date_a": r"\{\{CUA(\d+)\}\}"
+    },
+    {
+        "name": "Finance",
+        "filter": "Finance",
+        "slides": [7], # Slide 8
+        "regex_title": r"\{\{F\s+USE\s+CASE\s+Title\s+(\d+)\}\}",
+        "fmt_title": "{{{{F USE CASE Title {idx}}}}}",
+        "fmt_status": "{{{{StatusupdateUC{idx}F}}}}",
+        "key_owner": "{{UseCaseOwnerF}}",
+        "fmt_date_d": "{{{{FD{idx}}}}}",
+        "fmt_date_a": "{{{{FA{idx}}}}}",
+        "fmt_completeness": "{{{{OCF{idx}}}}}",
+        "regex_completeness": r"\{\{OCF(\d+)\}\}",
+        "regex_date_d": r"\{\{FD(\d+)\}\}",
+        "regex_date_a": r"\{\{FA(\d+)\}\}"
     }
 ]
 
@@ -147,6 +162,13 @@ def process_ppt(csv_path, output_folder):
             "p_title": "Customer Success USE CASE Title {}",
             "p_del": "CUD{}",
             "p_adopt": "CUA{}"
+        },
+        {
+            "name": "Finance",
+            "filter": "Finance",
+            "p_title": "Finance USE CASE Title {}",
+            "p_del": "FD{}",
+            "p_adopt": "FA{}"
         }
     ]
     
@@ -290,8 +312,8 @@ def process_ppt(csv_path, output_folder):
     ]
     print(f"Processing Foundational Cases ({len(foundational_cases)} cases found)...")
     
-    # Slides 7 (Index 6) and 8 (Index 7)
-    foundational_slides = [6, 7]
+    # Slides 9 (Index 8) and 10 (Index 9) (Foundational Use Cases)
+    foundational_slides = [8, 9]
     
     # Calculate Statistics for Overview Message
     total_foundational = len(foundational_cases)
@@ -385,9 +407,9 @@ def process_ppt(csv_path, output_folder):
     # 5. One-Pager Generation (Fill Pre-Duplicated Slides)
     # The user has manually duplicated Slide 9 multiple times in the template.
     # We just need to iterate through cases and fill the corresponding slides.
-    # Start Index for One-Pagers: 8 (Slide 9 is index 8)
+    # Start Index for One-Pagers: 11 (Slide 11 is index 10)
     
-    start_op_index = 8
+    start_op_index = 10
     print(f"Generating One-Pagers for {len(ordered_cases)} cases (Starting at Slide {start_op_index+1})...")
     
     cases_processed = 0
@@ -454,7 +476,9 @@ def process_ppt(csv_path, output_folder):
 
     
     # 6. Save Output
-    output_filename = "Final_Report.pptx"
+    import time
+    timestamp = int(time.time())
+    output_filename = f"Final_Report_{timestamp}.pptx"
     output_path = os.path.join(output_folder, output_filename)
     prs.save(output_path)
     

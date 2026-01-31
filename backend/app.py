@@ -6,8 +6,19 @@ except ImportError:
     from ppt_processor import process_ppt
 
 app = Flask(__name__)
-UPLOAD_FOLDER = 'uploads'
-OUTPUT_FOLDER = 'outputs'
+# Fix: Use absolute paths to avoid CWD/Flask root mismatch
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# If we want uploads/outputs to be consistent with root execution (as suggested by file structure):
+# We should target the ROOT uploads/outputs or BACKEND uploads/outputs.
+# The previous traceback expected backend/outputs. Let's stick to that for backend specific files, 
+# OR use project root if that's where the folders are.
+# Verified structure: ./uploads and ./backend/outputs exist. Mixed.
+# Let's standardize on Project Root for data.
+PROJECT_ROOT = os.path.dirname(BASE_DIR) # Go up one level from backend/
+
+UPLOAD_FOLDER = os.path.join(PROJECT_ROOT, 'uploads')
+OUTPUT_FOLDER = os.path.join(BASE_DIR, 'outputs') # Keep outputs in backend/outputs as per traceback hint
+
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
