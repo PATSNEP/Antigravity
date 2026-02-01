@@ -476,9 +476,11 @@ def process_ppt(csv_path, output_folder):
 
     
     # 6. Save Output
-    import time
-    timestamp = int(time.time())
-    output_filename = f"Final_Report_{timestamp}.pptx"
+    from datetime import datetime
+    # Format: CDP_USECASE_AUTOREPORT_YYYY-MM-DD_HH-MM-SS.pptx
+    # We include time to strictly prevent browser caching issues during same-day testing.
+    timestamp_str = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    output_filename = f"CDP_USECASE_AUTOREPORT_{timestamp_str}.pptx"
     output_path = os.path.join(output_folder, output_filename)
     prs.save(output_path)
     
