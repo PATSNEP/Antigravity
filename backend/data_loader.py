@@ -1,8 +1,22 @@
+"""
+DATEI: backend/data_loader.py
+BESCHREIBUNG:
+    Dieses Modul ist für das Einlesen und Bereinigen der Rohdaten verantwortlich.
+    
+    Hauptaufgaben:
+    1.  Definition des Mappings zwischen kryptischen CSV-Spaltennamen (z.B. `cr4e2_businessunit...`) 
+        und sprechenden internen Variablennamen (z.B. `business_unit`).
+    2.  Einlesen der CSV-Datei.
+    3.  Konvertierung jeder Zeile in ein `UseCase`-Objekt.
+    4.  Gruppierung der Use Cases nach ihrem Geschäftsbereich (Line of Business).
+"""
+
 import csv
 import collections
 from datetime import datetime
 
-# Mapping from CSV Headers to Internal Keys
+# Mapping von CSV-Headern zu internen Schlüsseln
+# Dient der Entkopplung: Wenn sich der CSV-Export ändert, muss nur hier angepasst werden.
 COLUMN_MAPPING = {
     "cr4e2_businessunit@OData.Community.Display.V1.FormattedValue": "business_unit",
     "cr4e2_businessadoptiondate": "adoption_date",
@@ -25,6 +39,10 @@ COLUMN_MAPPING = {
 }
 
 class UseCase:
+    """
+    Repräsentiert einen einzelnen Anwendungsfall (Use Case) aus der Datenquelle.
+    Die Attribute werden dynamisch basierend auf dem `COLUMN_MAPPING` gesetzt.
+    """
     def __init__(self, data_dict):
         self.raw_data = data_dict
         for internal_key, value in data_dict.items():
@@ -35,48 +53,63 @@ class UseCase:
 
 def load_data(csv_path):
     """
-    Reads the CSV and groups data by Line of Business.
-    Returns: Dict {'Marketing': [UseCase, ...], 'Sales': [...]}
+    Liest die angegebene CSV-Datei und gruppiert die Daten nach 'Line of Business'.
+    
+    Argumente:
+        csv_path (str): Der absolute Pfad zur CSV-Datei.
+        
+    Rückgabe:
+        dict: Ein Dictionary, wobei der Schlüssel der LoB-Name ist (z.B. 'Marketing')
+              und der Wert eine Liste von UseCase-Objekten.
+              Beispiel: {'Marketing': [UseCase1, UseCase2], ...}
     """
     grouped_data = collections.defaultdict(list)
-    foundational_summaries = [] # For AI placeholders logic later if needed
+    foundational_summaries = [] # Platzhalter für spätere AI-Logik (falls benötigt)
     
-    with open(csv_path, 'r', encoding='utf-8-sig') as f:
-        reader = csv.DictReader(f)
-        
-        # Verify columns exist
-        headers = reader.fieldnames
-        for csv_col in COLUMN_MAPPING.keys():
-            if csv_col not in headers:
-                print(f"WARNING: Expected column '{csv_col}' not found in CSV.")
-        
-        for row in reader:
-            # Map row to internal keys
-            clean_row = {}
-            for csv_col, internal_key in COLUMN_MAPPING.items():
-                val = row.get(csv_col, "").strip()
-                clean_row[internal_key] = val
-                
-            uc = UseCase(clean_row)
+    try:
+        # UTF-8-SIG wird verwendet, um das BOM (Byte Order Mark) von Excel-Exporten korrekt zu handhaben
+        with open(csv_path, 'r', encoding='utf-8-sig') as f:
+            reader = csv.DictReader(f)
             
-            # Grouping Logic
-            # Note: "Foundational" might be a Type, not strictly an LoB in the grouping sense for Slide 1?
-            # Requirement says: "Grouped by LoB" and mentions "Foundational usecases grouped by LoB".
-            # Inspecting mock data: Compliance has Type "Foundational".
-            # We will group by 'line_of_business' primarily.
+            # Prüfung: Sind alle erwarteten Spalten vorhanden?
+            headers = reader.fieldnames
+            for csv_col in COLUMN_MAPPING.keys():
+                if csv_col not in headers:
+                    print(f"WARNUNG: Erwartete Spalte '{csv_col}' wurde in der CSV nicht gefunden.")
             
-            lob = uc.line_of_business
-            if lob:
-                grouped_data[lob].append(uc)
-            else:
-                grouped_data["Unknown"].append(uc)
+            for row in reader:
+                # Zeile in interne Schlüssel mappen
+                clean_row = {}
+                for csv_col, internal_key in COLUMN_MAPPING.items():
+                    val = row.get(csv_col, "").strip()
+                    clean_row[internal_key] = val
+                    
+                uc = UseCase(clean_row)
                 
-    return grouped_data
+                # Gruppierungs-Logik
+                # Wir gruppieren primär nach der Spalte 'cr4e2_lineofbusiness'.
+                # Dies ist entscheidend für die spätere Zuordnung zu den Folien.
+                
+                lob = uc.line_of_business
+                if lob:
+                    grouped_data[lob].append(uc)
+                else:
+                    # Fallback für Zeilen ohne LoB
+                    grouped_data["Unknown"].append(uc)
+                    
+        return grouped_data
+        
+    except FileNotFoundError:
+        print(f"FEHLER: Datei nicht gefunden unter {csv_path}")
+        return {}
+    except Exception as e:
+        print(f"KRITISCHER FEHLER beim Laden der Daten: {e}")
+        return {}
 
 if __name__ == "__main__":
-    # Test run
+    # Testlauf (wird nur ausgeführt, wenn das Skript direkt gestartet wird)
     data = load_data("mock_data.csv")
     for lob, cases in data.items():
-        print(f"LOB: {lob} - {len(cases)} cases")
+        print(f"LOB: {lob} - {len(cases)} Fälle")
         for c in cases:
-            print(f"  - {c.title} (Type: {c.use_case_type}, Owner: {c.owner})")
+            print(f"  - {c.title} (Typ: {c.use_case_type}, Owner: {c.owner})")

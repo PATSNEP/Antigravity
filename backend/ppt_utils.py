@@ -1,49 +1,76 @@
+"""
+DATEI: backend/ppt_utils.py
+BESCHREIBUNG:
+    Enthält Low-Level-Hilfsfunktionen für die Manipulation von PowerPoint-Dateien.
+    
+    Da die Bibliothek `python-pptx` nicht alle Funktionen nativ unterstützt (z.B. Duplizieren von Folien),
+    greifen wir hier teilweise direkt auf die XML-Struktur (OpenXML) zu.
+    
+    Hauptfunktionen:
+    1.  `replace_text_in_shape`: Suchen und Ersetzen von Text in Textfeldern und Tabellen.
+    2.  `duplicate_slide`: Erstellt eine exakte Kopie einer Folie inklusive aller Elemente.
+    3.  `delete_slide`: Löscht eine Folie aus der Präsentation.
+"""
+
 from pptx.util import Pt
 from pptx.dml.color import RGBColor
 import copy
 import re
+import time
+import random
 
 def replace_text_in_shape(shape, replacements):
     """
-    Replaces text in a shape based on a dictionary of replacements.
-    replacements: Dict { placeholder_key: { 'text': str, 'formatting': dict, 'is_bullet': bool } }
+    Ersetzt Text in einer Form (Shape) basierend auf einem Dictionary von Ersetzungen.
+    
+    Argumente:
+        shape: Das PowerPoint-Shape-Objekt (Textfeld, Tabelle, etc.).
+        replacements: Ein Dictionary der Struktur:
+                      { '{{PLATZHALTER}}': { 'text': 'Neuer Wert', 'formatting': {...} } }
     """
+    # Früher Abbruch, wenn das Shape keinen Text enthalten kann
     if not shape.has_text_frame and not shape.has_table:
         return
 
-    # Table handling
+    # Verarbeitung von Tabellen
     if shape.has_table:
         for row in shape.table.rows:
             for cell in row.cells:
                 text_frame = cell.text_frame
                 process_text_frame(text_frame, replacements)
     
-    # TextFrame handling
+    # Verarbeitung von normalen Textfeldern
     if shape.has_text_frame:
         process_text_frame(shape.text_frame, replacements)
 
 def process_text_frame(text_frame, replacements):
-    # Iterate over paragraphs. 
-    # Use index-based loop or copy if we were modifying structure, 
-    # but rebuilding IN-PLACE is usually fine if we don't change paragraph count.
-    # However, p.clear() clears runs but keeps the paragraph element.
-    
+    """
+    Iteriert durch alle Absätze eines TextFrames und führt Ersetzungen durch.
+    """
     for p in text_frame.paragraphs:
-        # Optimization: only touch paragraphs with placeholders
+        # Optimierung: Wir fassen den Absatz nur an, wenn er Marker ("{{") enthält.
         if "{{" in p.text:
             process_paragraph(p, replacements)
 
 def process_paragraph(p, replacements):
+    """
+    Kernlogik für das Ersetzen in einem Absatz.
+    
+    Herausforderung:
+    Ein Absatz besteht aus "Runs" (Text-Teilen mit gleicher Formatierung).
+    Ein Platzhalter kann über mehrere Runs verteilt sein (z.B. Run1="{{", Run2="Title", Run3="}}").
+    Daher bauen wir den Absatz neu auf.
+    """
     current_text = p.text
-    # Regex split to handle mixed content (like title + subtitle)
+    # Regex-Split, um Platzhalter von statischem Text zu trennen
+    # Wir suchen nach Mustern wie {{...}}
     pattern = r"(\{\{.*?\}\})"
     parts = re.split(pattern, current_text)
     
-    # Check match again with normalized keys to be sure we have a replacement
-    # (Reuse logic from before)
+    # Vorprüfung: Haben wir überhaupt eine passende Ersetzung definiert?
     has_match = False
     for part in parts:
-        norm_part = " ".join(part.split())
+        norm_part = " ".join(part.split()) # Leerzeichen normalisieren
         if norm_part in replacements:
             has_match = True
             break
@@ -51,9 +78,9 @@ def process_paragraph(p, replacements):
     if not has_match:
         return
 
-    # Clear and Rebuild Paragraph
+    # Absatz leeren und neu befüllen
+    # p.clear() entfernt alle Runs, behält aber die Absatz-Eigenschaften (Ausrichtung, Abstand etc.) bei.
     p.clear() 
-    # Note: p.clear() removes all runs. Paragraph properties (alignment etc) usually remain.
     
     for part in parts:
         if not part: continue
@@ -61,32 +88,27 @@ def process_paragraph(p, replacements):
         norm_part = " ".join(part.split())
         
         if norm_part in replacements:
+            # Es ist ein bekannter Platzhalter -> Ersetzen
             data = replacements[norm_part]
-            # Handle replacement
             run = p.add_run()
             run.text = data["text"]
             apply_formatting(run, data.get("formatting", {}))
         else:
-            # Static text part
-            # We add it back. 
-            if part: # Add even if just whitespace/newlines
+            # Es ist statischer Text -> Einfach wieder einfügen
+            if part: 
                 run = p.add_run()
-                # Fix for vertical tab (\x0b) rendering as _x000B_
-                # Replace with \n for correct line break in PPT
+                # Fix: Vertikale Tabs (\x0b) werden von PPT manchmal als Kästchen (_x000B_) dargestellt.
+                # Wir ersetzen sie durch echte Zeilenumbrüche.
                 run.text = part.replace("\x0b", "\n")
                 
-                # Restore fixed font size for data rows to prevent layout distortion
-                # (e.g. alignment tabs becoming too large)
-                # Since headers are skipped (no {{), this is safe for data paragraphs.
+                # Layout-Schutz: Wir setzen eine kleine Schriftgröße (7pt) sicherheitshalber zurück,
+                # um zu verhindern, dass Tabellenzeilen durch Formatierungsverlust explodieren.
                 run.font.size = Pt(7)
 
-
-def apply_replacement_to_paragraph(paragraph, data):
-    run = paragraph.add_run()
-    run.text = data["text"]
-    apply_formatting(run, data.get("formatting", {}))
-
 def apply_formatting(run, formatting):
+    """
+    Wendet Formatierungen (Fett, Größe, Farbe) auf einen Text-Run an.
+    """
     if not formatting: return
     font = run.font
     if "bold" in formatting:
@@ -98,86 +120,54 @@ def apply_formatting(run, formatting):
 
 def duplicate_slide(prs, source_slide_index):
     """
-    Duplicate the slide at source_slide_index and append it to the end of the presentation.
-    Returns the new slide.
+    Dupliziert die Folie am angegebenen Index und fügt sie am Ende der Präsentation an.
+    
+    Da python-pptx dies nicht nativ kann, kopieren wir die XML-Elemente.
     """
     source_slide = prs.slides[source_slide_index]
     slide_layout = source_slide.slide_layout
+    
+    # Neue, leere Folie basierend auf dem gleichen Layout erstellen
     dest_slide = prs.slides.add_slide(slide_layout)
     
-    # Copy shapes
+    # Alle Formen (Shapes) kopieren
     for shape in source_slide.shapes:
-        new_shape = copy_shape(shape, dest_slide)
+        copy_shape(shape, dest_slide)
         
     return dest_slide
 
 def copy_shape(shape, dest_slide):
-    # Simple shape copy implementation
-    # Note: python-pptx doesn't have a native 'clone_shape'
-    # Use element copying for fidelity
-    
+    """
+    Kopiert eine Form (Shape) auf die Ziel-Folie.
+    Nutzt Deep-Copy auf XML-Ebene.
+    """
     new_el = copy.deepcopy(shape.element)
     
-    # CRITICAL: Generate new ID to prevent corruption
-    # Shapes must have unique IDs. 
-    # Valid IDs are usually positive integers. 
-    # We can try to assume python-pptx will handle it if we modify it, 
-    # but safest is to let it generate or pick a random high number?
-    # Actually, simpler: removing the cNvPr id attribute might force regeneration on save, 
-    # but python-pptx expects it.
-    
-    # Simple ID generation strategy:
-    # Use a random ID or increment global counter? 
-    # Easier: Just verify duplication doesn't crash. 
-    # The standard way in XML manipulation is typically to create a new ID.
-    
-    # Let's try to remove the ID and see if PPT repairs it, OR standard practice:
-    for sp in new_el.iter():
-        if 'id' in sp.attrib:
-             # This matches many things. We care about p:cNvPr id="..."
-             pass
-             
-    # Target specifically cNvPr
-    check_tags = [
-        '{http://schemas.openxmlformats.org/presentationml/2006/main}cNvPr',
-        '{http://schemas.openxmlformats.org/drawingml/2006/main}cNvPr' 
-    ]
-    
-    # We need to find the NonVisualDrawingProps to set a new ID.
-    # But finding the max ID in the slide is hard.
-    # Strategy: Just append it. PPT "Repair" often fixes IDs. 
-    # User said "without corruption".
-    # Better strategy: Do NOT use deepcopy if possible. 
-    # But we need exact formatting.
-    # Okay, I will try to set a unique ID based on hash of time?
-    import time
-    import random
+    # WICHTIG: Jedes Shape muss eine eindeutige ID haben (cNvPr id).
+    # Beim bloßen Kopieren hätten wir zwei Shapes mit gleicher ID -> Datei korrupt.
+    # Wir generieren daher eine neue, zufällige ID.
     unique_id = int(time.time() * 1000) + random.randint(0, 10000)
     
-    # Find cNvPr
-    # The tag is usually p:nvSpPr -> p:cNvPr
-    # Or p:nvGrpSpPr -> p:cNvPr
-    
-    found_id = False
+    # Wir suchen im XML-Baum nach dem Element 'cNvPr' (Non-Visual Properties)
     for desc in new_el.iterdescendants():
         if desc.tag.endswith('cNvPr'):
-             # Set new ID
+             # Neue ID setzen
              desc.set('id', str(unique_id))
-             # Also Name should probably be unique?
+             # Auch den Namen unique machen (z.B. "Textfeld 12345")
              desc.set('name', desc.get('name') + f" {unique_id}")
-             found_id = True
              break
-             
-    dest_slide.shapes._spTree.insert_element_before(new_el, 'p:extLst')
     
+    # Das neue Element in den XML-Baum der Ziel-Folie einfügen
     dest_slide.shapes._spTree.insert_element_before(new_el, 'p:extLst')
     
     return new_el
 
 def delete_slide(prs, index):
     """
-    Delete a slide from the presentation by index.
+    Löscht eine Folie aus der Präsentation anhand ihres Index.
     """
+    # Zugriff auf die interne Slide-ID-Liste im XML
     xml_slides = prs.slides._sldIdLst
     slides = list(xml_slides)
+    # Element entfernen
     xml_slides.remove(slides[index])

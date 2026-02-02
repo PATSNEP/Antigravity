@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  antigravity-app:
+    build: .
+    container_name: antigravity_report_gen
+    ports:
+      - "5000:5000"
+    volumes:
+      # Persist Uploads and Outputs locally
+      - ./uploads:/app/uploads
+      - ./backend/outputs:/app/backend/outputs
+      # IMPORTANT: Do NOT map code volumes (like ./backend:/app/backend) blindly 
+      # because it would hide the copied static frontend files inside the container.
+      # Only map data folders!
+    environment:
+      - FLASK_ENV=production
+    restart: unless-stopped
